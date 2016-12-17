@@ -105,7 +105,7 @@ def prepare_data(vol_path, seg_path, vol_dest_path, seg_dest_path, klr,SegRatio,
             f = False
             dx = random.randint(0,15)
             dy = random.randint(0,15)
-            
+
             #check if dx dy was previously used
             for dxdy in shifts_list:
                 if (dxdy[0] == dx and dxdy[1] == dy):
@@ -115,26 +115,27 @@ def prepare_data(vol_path, seg_path, vol_dest_path, seg_dest_path, klr,SegRatio,
             if f: #if used before go to next itteration with advancing counters
                 continue
             else: #if not used
+
                 #create shifted images
                 shifted_input_vol = dh.Im2Blks(input_vol,patch_size,dx,dy)
                 shifted_liver_seg = dh.Im2Blks(liver_seg,patch_size,dx,dy)
                 shifted_kidney_seg = dh.Im2Blks(kidney_seg,patch_size,dx,dy)
-                
+
                 #remove irrelevant patches
                 #if all values in patch are less than 10 hounsfeld  -> remove patch
                 #if all values in ptach above 400 hounsfeld -> remove patch
                 #if patch is not uniformly segmented  -> remove patch
-                
+
                 s = shifted_input_vol.shape #size changed because array was reshaped
                 ind_del = list()   #indexes of patches to delete
                 res_array = list() # result array nothing = 0, liver = 1, kidney = 2
-                
+
                 for i in range(s[0]):
                     if ((( shifted_input_vol[i,:,:] < 10).all()) or ((shifted_input_vol[i,:,:] > 400).all()) or \
                     ( np.sum(shifted_liver_seg[i,:,:]) > 0 and np.sum(shifted_liver_seg[i,:,:]) < SegRatio * patch_size ** 2) or \
                     (np.sum(shifted_kidney_seg[i,:,:]) > 0 and  np.sum(shifted_kidney_seg[i,:,:]) < SegRatio * patch_size ** 2)):
                         ind_del.append(i)
-                    
+
                     #build result_seg_array
                     if (np.sum(shifted_liver_seg[i,0,:,:]) >= SegRatio * patch_size ** 2):
                         res_array.append(dh.liver)
@@ -142,16 +143,16 @@ def prepare_data(vol_path, seg_path, vol_dest_path, seg_dest_path, klr,SegRatio,
                         res_array.append(dh.kidney)
                     else:
                         res_array.append(dh.nothing)
-    
+
                 #delete irrelevant patches
                 shifted_input_vol = np.delete(shifted_input_vol,ind_del,0)
                 y_res = np.delete(np.array(res_array),ind_del,0)
-                
+
                 #calc and print stats for each volume
                 kidney_count = len(y_res[np.where(y_res == 2)])
                 liver_count = len(y_res[np.where(y_res == 1)])
                 nothing_count = len(y_res)-kidney_count-liver_count
-                
+
                 #check if kidney to liver ration better than klr
                 if kidney_count/float(liver_count) < klr/float(100):
                     r_count+=1
@@ -177,8 +178,8 @@ def prepare_data(vol_path, seg_path, vol_dest_path, seg_dest_path, klr,SegRatio,
 
 #params
 
-vol_src_path = "CT\\Volumes"
-seg_src_path = "CT\\Segmentations"
+vol_src_path = "c:\\CT\\Volumes"
+seg_src_path = "c:\\CT\\Segmentations"
 vol_dest_path = "Train\\Volumes"
 seg_dest_path = "Train\\Class"
 klr = 3 #in percentage
