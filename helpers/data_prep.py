@@ -236,6 +236,8 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
     print '######################################'
 
+    return shifted_input_vol, y_res
+
 if __name__ == '__main__':
 
     env = 'test'
