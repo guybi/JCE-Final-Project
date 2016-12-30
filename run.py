@@ -10,10 +10,14 @@ klr = 3  # in percentage
 learning_rate = 0.00001
 
 if env == 'test':
-    vol_src_path = "c:\\CT\\Test\\Volumes"
-    seg_src_path = "c:\\CT\\Test\\Segmentations"
-    vol_dest_path = "c:\\CT\\Test\\Train\\Volumes"
-    seg_dest_path = "c:\\CT\\Test\\Train\\Class"
+    # vol_src_path = "c:\\CT\\Test\\Volumes"
+    # seg_src_path = "c:\\CT\\Test\\Segmentations"
+    # vol_dest_path = "c:\\CT\\Test\\Train\\Volumes"
+    # seg_dest_path = "c:\\CT\\Test\\Train\\Class"
+    vol_src_path = "/home/tal/CT/Test/Volumes"
+    seg_src_path = "/home/tal/CT/Test/Segmentations"
+    vol_dest_path = "/home/tal/CT/Test/Train/Volumes"
+    seg_dest_path = "/home/tal/CT/Test/Train/Class"
 else:
     vol_src_path = "c:\\CT\\Volumes"
     seg_src_path = "c:\\CT\\Segmentations"
@@ -21,6 +25,8 @@ else:
     seg_dest_path = "c:\\CT\\Train\\Class"
 
 x, y = data_prep.prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+print x.shape
+print y.shape
 
 weights = {
     # 5x5 conv, 1 input, 32 outputs
@@ -56,6 +62,8 @@ init = tf.initialize_all_variables()
 batch_size = 128
 training_iters = 200000
 display_step = 10
+
+print 'start tensorflow session...'
 
 with tf.Session() as sess:
     sess.run(init)

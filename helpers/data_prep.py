@@ -115,7 +115,7 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
         # read volume
         print 'read file...', f
-        tmp_img = stk.ReadImage(vol_src_path + '\\' + f)
+        tmp_img = stk.ReadImage(vol_src_path + '/' + f)
         input_vol = stk.GetArrayFromImage(tmp_img)
 
         # reduce volume to relevant size
@@ -128,20 +128,20 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
         # read liver segmentation
         print 'read liver segmentation...'
-        tmp = stk.ReadImage(seg_src_path + "\\" + getSegFileName(seg_src_path, f, liverId))  # read liver segmentation
+        tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, liverId))  # read liver segmentation
         liver_seg = stk.GetArrayFromImage(tmp)
         liver_seg = seg_size_reduce(liver_seg.astype(np.float32), downsample, start, end)  # reduce size of liver_seg image
 
         # read left kidney segmentation
         print 'read left kidney segmentation...'
-        tmp = stk.ReadImage(seg_src_path + "\\" + getSegFileName(seg_src_path, f, kindeyLId))
+        tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, kindeyLId))
         left_kidney_seg = stk.GetArrayFromImage(tmp)
         left_kidney_seg = seg_size_reduce(left_kidney_seg.astype(np.float32), downsample, start,
                                              end)  # reduce size of left_kid_seg image
 
         # read right kidney segmentation
         print 'read right kidney segmentation...'
-        tmp = stk.ReadImage(seg_src_path + "\\" + getSegFileName(seg_src_path, f, kidneyRId))  # read left kidney seg
+        tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, kidneyRId))  # read left kidney seg
         right_kidney_seg = stk.GetArrayFromImage(tmp)
         right_kidney_seg = seg_size_reduce(right_kidney_seg.astype(np.float32), downsample, start,
                                               end)  # reduce size of right_kid_seg image
@@ -222,10 +222,10 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
                     print str(kidney_count) + " kidney patches, " + str(liver_count) + " liver patches and " + str(
                         nothing_count) + \
                           " the rest"
-                    np.save(vol_dest_path + "\\Volume_patchsize_" + str(patch_size) + "_" + str(k) + "_xshift" + str(
-                        dx) + "_yshift" + str(dy), shifted_input_vol)
-                    np.save(seg_dest_path + "\\Classification_patchsize_" + str(patch_size) + "_" + str(
-                        k) + "_xshift" + str(dx) + "_yshift" + str(dy), y_res)
+                    # np.save(vol_dest_path + "/Volume_patchsize_" + str(patch_size) + "_" + str(k) + "_xshift" + str(
+                    #     dx) + "_yshift" + str(dy), shifted_input_vol)
+                    # np.save(seg_dest_path + "/Classification_patchsize_" + str(patch_size) + "_" + str(
+                    #     k) + "_xshift" + str(dx) + "_yshift" + str(dy), y_res)
                     r_count += 1
                     g_r_count += 1
 
