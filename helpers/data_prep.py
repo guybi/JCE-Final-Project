@@ -3,6 +3,7 @@ import SimpleITK as stk
 import os
 import random
 from PIL import Image
+import tensorflow as tf
 
 # classification index value of nothing, liver and kidney
 nothing = 0
@@ -16,6 +17,7 @@ def getSegFileName(path, file_name,index):
         if (f.startswith(sub_name)):
             return f
     return "Fail"
+
 
 def vol_size_reduce(input_im, r, start_im, end_im):
     d = input_im.shape
@@ -83,6 +85,7 @@ def Im2Blks(Im, BlkSz, x_shift=0, y_shift=0, is_vol=True):
     Blk = np.lib.stride_tricks.as_strided(tmpIm, shape=shape, strides=strides)
     Blk = np.reshape(Blk, [L[0] * L[1] * L[2] / BlkSz ** 2, 1, BlkSz, BlkSz])
     return Blk
+
 
 def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
 
@@ -237,6 +240,23 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
     print '######################################'
 
     return shifted_input_vol, y_res
+
+
+def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
+    if (os.path.exists(vol_dest_path) and os.path.exists(seg_dest_path)):
+        vol_list = os.listdir(vol_dest_path)
+        seg_list = os.listdir(seg_dest_path)
+        if(len(vol_list) != 0 or len(seg_list) != 0):
+            shifted_input_vol = np.load(vol_dest_path + '/' + vol_list[0])
+            y_res = np.load(seg_dest_path + '/' + seg_list[0])
+        else:
+            shifted_input_vol, y_res = prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio,
+                                                 klr)
+    else:
+        shifted_input_vol, y_res = prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+
+    return shifted_input_vol, y_res
+
 
 if __name__ == '__main__':
 
