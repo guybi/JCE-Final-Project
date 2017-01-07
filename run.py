@@ -12,7 +12,8 @@ seg_ratio = 0.75
 klr = 3  # in percentage
 learning_rate = 0.00001
 batch_size = 128
-training_iters = 200000
+# training_iters = 200000
+training_iters = 200
 display_step = 10
 
 x = tf.placeholder(tf.float32, [batch_size, None, None, None])
@@ -62,7 +63,7 @@ pred = build_simple_cnn14(x, weights, biases)
 
 # Define loss and optimizer
 # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, np.array(y_data).reshape(y_data.shape[0], 1)))
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), y))
 optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # Evaluate model

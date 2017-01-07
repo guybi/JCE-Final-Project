@@ -114,7 +114,7 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
     for f in vol_list:
 
-        print '######################################'
+        print '###############################################################################'
 
         # read volume
         print 'read file...', f
@@ -237,22 +237,30 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
         print "saved " + str(g_r_count) + " random shifted files out of " + str(dxy)
         k += 1
 
-    print '######################################'
+    print '###############################################################################'
 
     return shifted_input_vol, y_res
 
 
 def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
+    shifted_input_vol = []
+    y_res = []
     if (os.path.exists(vol_dest_path) and os.path.exists(seg_dest_path)):
         vol_list = os.listdir(vol_dest_path)
         seg_list = os.listdir(seg_dest_path)
         if(len(vol_list) != 0 or len(seg_list) != 0):
-            shifted_input_vol = np.load(vol_dest_path + '/' + vol_list[0])
-            y_res = np.load(seg_dest_path + '/' + seg_list[0])
+            print 'Shifted data found. Load from directory...'
+            for i in range(0, len(vol_list)):
+                shifted_input_vol.append(np.load(vol_dest_path + '/' + vol_list[i]))
+
+            for i in range(0, len(seg_list)):
+                y_res.append(np.load(seg_dest_path + '/' + seg_list[i]))
         else:
+            print 'Shifted data directory is empty. Prepare data...'
             shifted_input_vol, y_res = prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio,
                                                  klr)
     else:
+        print 'No shifted data found. Prepare data...'
         shifted_input_vol, y_res = prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 
     return shifted_input_vol, y_res
