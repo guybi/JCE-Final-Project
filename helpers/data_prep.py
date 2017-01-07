@@ -4,11 +4,17 @@ import os
 import random
 from PIL import Image
 import tensorflow as tf
+from random import shuffle
 
 # classification index value of nothing, liver and kidney
 nothing = 0
 liver = 1
 kidney = 2
+
+def randomize_file_list(file_list):
+    tmp = list(file_list) #copy list object
+    shuffle(tmp) # TODO use tf shuffle
+    return tmp
 
 def getSegFileName(path, file_name,index):
     seg_list = os.listdir(path)

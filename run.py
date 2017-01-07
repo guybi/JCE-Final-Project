@@ -20,22 +20,30 @@ x = tf.placeholder(tf.float32, [batch_size, None, None, None])
 y = tf.placeholder(tf.float32, [batch_size])
 
 if env == 'test':
-    # vol_src_path = "c:\\CT\\Test\\Volumes"
-    # seg_src_path = "c:\\CT\\Test\\Segmentations"
-    # vol_dest_path = "c:\\CT\\Test\\Train\\Volumes"
-    # seg_dest_path = "c:\\CT\\Test\\Train\\Class"
     vol_src_path = "/home/tal/CT/Test/Volumes"
     seg_src_path = "/home/tal/CT/Test/Segmentations"
     vol_dest_path = "/home/tal/CT/Test/Train/Volumes"
     seg_dest_path = "/home/tal/CT/Test/Train/Class"
+    train_vol_path = "/home/tal/CT/Test/Train/Volumes"
+    train_class_path = "/home/tal/CT/Test/Train/Class"
+    val_vol_path = "/home/tal/CT/Test/Val/Volumes"
+    val_class_path = "/home/tal/CT/Test/Val/Class"
 else:
-    vol_src_path = "c:\\CT\\Volumes"
-    seg_src_path = "c:\\CT\\Segmentations"
-    vol_dest_path = "c:\\CT\\Train\\Volumes"
-    seg_dest_path = "c:\\CT\\Train\\Class"
+    vol_src_path = "/home/tal/CT/Volumes"
+    seg_src_path = "/home/tal/CT/Segmentations"
+    vol_dest_path = "/home/tal/CT/Train/Volumes"
+    seg_dest_path = "/home/tal/CT/Train/Class"
+    train_vol_path = "/home/tal/CT/Train/Volumes"
+    train_class_path = "/home/tal/CT/Train/Class"
+    val_vol_path = "/home/tal/CT/Val/Volumes"
+    val_class_path = "/home/tal/CT/Val/Class"
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 
+train_vol_list = os.listdir(train_vol_path)
+train_class_list = os.listdir(train_class_path)
+val_vol_list = os.listdir(val_vol_path)
+val_class_list = os.listdir(val_class_path)
 
 weights = {
     # 5x5 conv, 1 input, 64 outputs
