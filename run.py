@@ -11,10 +11,10 @@ env = 'test'
 seg_ratio = 0.75
 klr = 3  # in percentage
 learning_rate = 0.00001
-batch_size = 128
+batch_size = 200
 # training_iters = 200000
-training_iters = 200
-display_step = 10
+training_iters = 2
+display_step = 1
 
 x = tf.placeholder(tf.float32, [batch_size, None, None, None])
 y = tf.placeholder(tf.float32, [batch_size])
@@ -34,10 +34,8 @@ else:
     vol_dest_path = "c:\\CT\\Train\\Volumes"
     seg_dest_path = "c:\\CT\\Train\\Class"
 
-x_data, y_data = data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 
-print x_data.shape
-print y_data.shape
 
 weights = {
     # 5x5 conv, 1 input, 64 outputs
@@ -102,10 +100,9 @@ with tf.Session() as sess:
         step += 1
     print("Optimization Finished!")
 
-    # Calculate accuracy for 256 mnist test images
-    print("Testing Accuracy:", \
-        sess.run(accuracy, feed_dict={x: x,
-                                      y: y}))
+    # print("Testing Accuracy:", \
+    #     sess.run(accuracy, feed_dict={x: batch_x,
+    #                                   y: batch_y}))
 
     coord.request_stop()
     coord.join(threads)
