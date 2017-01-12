@@ -15,6 +15,7 @@ batch_size = 200
 # training_iters = 200000
 training_iters = 2
 display_step = 1
+validation_files_ind = [18,19]
 
 x = tf.placeholder(tf.float32, [batch_size, None, None, None])
 y = tf.placeholder(tf.float32, [batch_size])
@@ -47,7 +48,8 @@ else:
     val_vol_path = "/home/tal/CT/Val/Volumes"
     val_class_path = "/home/tal/CT/Val/Class"
 
-x_data, y_data = data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+data_prep.prepare_val_train_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, validation_files_ind)
 
 # train_vol_list = os.listdir(train_vol_path)
 # train_class_list = os.listdir(train_class_path)
