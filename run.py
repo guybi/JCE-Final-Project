@@ -40,16 +40,16 @@ else:
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 
-train_vol_list = os.listdir(train_vol_path)
-train_class_list = os.listdir(train_class_path)
-val_vol_list = os.listdir(val_vol_path)
-val_class_list = os.listdir(val_class_path)
+# train_vol_list = os.listdir(train_vol_path)
+# train_class_list = os.listdir(train_class_path)
+# val_vol_list = os.listdir(val_vol_path)
+# val_class_list = os.listdir(val_class_path)
 
 weights = {
     # 5x5 conv, 1 input, 64 outputs
     'wc1': tf.Variable(tf.random_normal([5, 5, 1, 64])),
     # 5x5 conv, 32 inputs, 64 outputs
-    # 'wc2': tf.Variable(tf.random_normal([5, 5, 32, 64])),
+    'wc2': tf.Variable(tf.random_normal([5, 5, 64, 64])),
     # fully connected, 5*5*64 inputs, 256 outputs
     'wd1': tf.Variable(tf.random_normal([5*5*64, 256])),
     # 256 inputs, 1 outputs (class prediction)
