@@ -11,10 +11,12 @@ nothing = 0
 liver = 1
 kidney = 2
 
+
 def randomize_file_list(file_list):
     tmp = list(file_list) #copy list object
     shuffle(tmp) # TODO use tf shuffle
     return tmp
+
 
 def getSegFileName(path, file_name,index):
     seg_list = os.listdir(path)
@@ -129,8 +131,8 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
 
     vol_list = os.listdir(vol_src_path)
-    print "List of input files:"
-    print vol_list
+    print("List of input files:")
+    print(vol_list)
 
     if not (os.path.exists(vol_dest_path)):
         os.makedirs(vol_dest_path)
@@ -142,15 +144,15 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
     for f in vol_list:
 
-        print '###############################################################################'
+        print('###############################################################################')
 
         # read volume
-        print 'read file...', f
+        print('read file...', f)
         tmp_img = stk.ReadImage(vol_src_path + '/' + f)
         input_vol = stk.GetArrayFromImage(tmp_img)
 
         # reduce volume to relevant size
-        print 'reduce image size...'
+        print('reduce image size...')
         d = input_vol.shape
         if (start > d[0] or end > d[0]):
             start = 0
@@ -158,27 +160,27 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
         input_vol = vol_size_reduce(input_vol.astype(np.float32), downsample, start, end)
 
         # read liver segmentation
-        print 'read liver segmentation...'
+        print('read liver segmentation...')
         tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, liverId))  # read liver segmentation
         liver_seg = stk.GetArrayFromImage(tmp)
         liver_seg = seg_size_reduce(liver_seg.astype(np.float32), downsample, start, end)  # reduce size of liver_seg image
 
         # read left kidney segmentation
-        print 'read left kidney segmentation...'
+        print('read left kidney segmentation...')
         tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, kindeyLId))
         left_kidney_seg = stk.GetArrayFromImage(tmp)
         left_kidney_seg = seg_size_reduce(left_kidney_seg.astype(np.float32), downsample, start,
                                              end)  # reduce size of left_kid_seg image
 
         # read right kidney segmentation
-        print 'read right kidney segmentation...'
+        print('read right kidney segmentation...')
         tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, kidneyRId))  # read left kidney seg
         right_kidney_seg = stk.GetArrayFromImage(tmp)
         right_kidney_seg = seg_size_reduce(right_kidney_seg.astype(np.float32), downsample, start,
                                               end)  # reduce size of right_kid_seg image
 
         # make one kidney segmentation file
-        print 'merge left and right kidney segmentation...'
+        print('merge left and right kidney segmentation...')
         kidney_seg = np.add(right_kidney_seg, left_kidney_seg)
 
         # turn segmentation matrices into 1.0 or 0.0 values
@@ -249,10 +251,10 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
                 else:
                     # save numpy input_vol array to disk
                     # save numpy y_res vector to disk
-                    print "shifts are: dx = " + str(dx) + " dy = " + str(dy)
-                    print str(kidney_count) + " kidney patches, " + str(liver_count) + " liver patches and " + str(
+                    print("shifts are: dx = " + str(dx) + " dy = " + str(dy))
+                    print(str(kidney_count) + " kidney patches, " + str(liver_count) + " liver patches and " + str(
                         nothing_count) + \
-                          " the rest"
+                          " the rest")
                     np.save(vol_dest_path + "/Volume_patchsize_" + str(patch_size) + "_" + str(k) + "_xshift" + str(
                         dx) + "_yshift" + str(dy), shifted_input_vol)
                     np.save(seg_dest_path + "/Classification_patchsize_" + str(patch_size) + "_" + str(
@@ -262,10 +264,10 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
             shifts_list.append([dx, dy])  # mark used random shifts pair
 
-        print "saved " + str(g_r_count) + " random shifted files out of " + str(dxy)
+        print("saved " + str(g_r_count) + " random shifted files out of " + str(dxy))
         k += 1
 
-    print '###############################################################################'
+    print('###############################################################################')
 
 
 def norm_data(vol_src_path, seg_src_path):
@@ -282,7 +284,7 @@ def norm_data(vol_src_path, seg_src_path):
                 val_vol_list.append(f)
 
     for f in val_vol_list:
-        print "normalizing data file: " + f
+        print("normalizing data file: " + f)
         vol = np.load(vol_src_path + "\\" + f)  # load volume data
         class_f = ret_class_file(f, class_list)  # get class file name
         cat = np.load(seg_src_path + "\\" + class_f)  # load class data
@@ -341,7 +343,7 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
         vol_list = os.listdir(vol_dest_path)
         seg_list = os.listdir(seg_dest_path)
         if(len(vol_list) != 0 or len(seg_list) != 0):
-            print 'Shifted data found. Load from directory...'
+            print('Shifted data found. Load from directory...')
             for i in range(0, len(vol_list)):
                 shifted_input_vol.append(np.array(np.load(vol_dest_path + '/' + vol_list[i])))
 
@@ -351,13 +353,13 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
             shifted_input_vol = np.array(shifted_input_vol)
             y_res = np.array(y_res)
         else:
-            print 'Shifted data directory is empty. Prepare data...'
+            print('Shifted data directory is empty. Prepare data...')
             prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio,
                                                  klr)
-            print 'Normalize data...'
+            print('Normalize data...')
             norm_data(vol_dest_path, seg_dest_path)
     else:
-        print 'No shifted data found. Prepare data...'
+        print('No shifted data found. Prepare data...')
         prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
-        print 'Normalize data...'
+        print('Normalize data...')
         norm_data(vol_dest_path, seg_dest_path)
