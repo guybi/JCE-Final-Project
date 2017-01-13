@@ -67,51 +67,51 @@ pred = build_simple_cnn14(x, weights, biases)
 
 
 
-# Define loss and optimizer
-# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, np.array(y_data).reshape(y_data.shape[0], 1)))
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), y))
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
-
-# Evaluate model
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y_data, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-
-# Initializing the variables
-init = tf.global_variables_initializer()
-
-print 'start tensorflow session...'
-
-with tf.Session() as sess:
-    sess.run(init)
-    step = 1
-
-    # Keep training until reach max iterations
-    while step < training_iters:
-        batch_x, batch_y = tf.train.batch([x_data, y_data], batch_size=batch_size, enqueue_many=True, capacity=32)
-        test_batch_x, test_batch_y = tf.train.shuffle_batch(
-            [x_data, y_data], batch_size=128,
-            capacity=2000,
-            min_after_dequeue=1000)
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(coord=coord)
-        batch_x, batch_y = sess.run([batch_x, batch_y])
-
-        # Run optimization op (backprop)
-        sess.run(optimizer, feed_dict={x: batch_x, y: batch_y})
-        if step % display_step == 0:
-            # Calculate batch loss and accuracy
-            loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x,
-                                                              y: batch_y})
-            print("Iter " + str(step*batch_size) + ", Minibatch Loss= " + \
-                  "{:.6f}".format(loss) + ", Training Accuracy= " + \
-                  "{:.5f}".format(acc))
-        step += 1
-    print("Optimization Finished!")
-
-    # print("Testing Accuracy:", \
-    #     sess.run(accuracy, feed_dict={x: batch_x,
-    #                                   y: batch_y}))
-
-    coord.request_stop()
-    coord.join(threads)
-    sess.close()
+# # Define loss and optimizer
+# # cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, np.array(y_data).reshape(y_data.shape[0], 1)))
+# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), y))
+# optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
+#
+# # Evaluate model
+# correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y_data, 1))
+# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+#
+# # Initializing the variables
+# init = tf.global_variables_initializer()
+#
+# print('start tensorflow session...')
+#
+# with tf.Session() as sess:
+#     sess.run(init)
+#     step = 1
+#
+#     # Keep training until reach max iterations
+#     while step < training_iters:
+#         batch_x, batch_y = tf.train.batch([x_data, y_data], batch_size=batch_size, enqueue_many=True, capacity=32)
+#         test_batch_x, test_batch_y = tf.train.shuffle_batch(
+#             [x_data, y_data], batch_size=128,
+#             capacity=2000,
+#             min_after_dequeue=1000)
+#         coord = tf.train.Coordinator()
+#         threads = tf.train.start_queue_runners(coord=coord)
+#         batch_x, batch_y = sess.run([batch_x, batch_y])
+#
+#         # Run optimization op (backprop)
+#         sess.run(optimizer, feed_dict={x: batch_x, y: batch_y})
+#         if step % display_step == 0:
+#             # Calculate batch loss and accuracy
+#             loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x,
+#                                                               y: batch_y})
+#             print("Iter " + str(step*batch_size) + ", Minibatch Loss= " + \
+#                   "{:.6f}".format(loss) + ", Training Accuracy= " + \
+#                   "{:.5f}".format(acc))
+#         step += 1
+#     print("Optimization Finished!")
+#
+#     # print("Testing Accuracy:", \
+#     #     sess.run(accuracy, feed_dict={x: batch_x,
+#     #                                   y: batch_y}))
+#
+#     coord.request_stop()
+#     coord.join(threads)
+#     sess.close()
