@@ -15,46 +15,35 @@ batch_size = 200
 # training_iters = 200000
 training_iters = 2
 display_step = 1
-validation_files_ind = [18,19]
 
 x = tf.placeholder(tf.float32, [batch_size, None, None, None])
 y = tf.placeholder(tf.float32, [batch_size])
 
 if env == 'test':
-    # vol_src_path = "/home/tal/CT/Test/Volumes"
-    # seg_src_path = "/home/tal/CT/Test/Segmentations"
-    # vol_dest_path = "/home/tal/CT/Test/Train/Volumes"
-    # seg_dest_path = "/home/tal/CT/Test/Train/Class"
-    # train_vol_path = "/home/tal/CT/Test/Train/Volumes"
-    # train_class_path = "/home/tal/CT/Test/Train/Class"
-    # val_vol_path = "/home/tal/CT/Test/Val/Volumes"
-    # val_class_path = "/home/tal/CT/Test/Val/Class"
-
-    vol_src_path = "C:\\CT\\Test\\Volumes"
-    seg_src_path = "C:\\CT\\Test\\Segmentations"
-    vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
-    seg_dest_path = "C:\\CT\\Test\\Train\\Class"
-    train_vol_path = "C:\\CT\\Test\\Train\\Volumes"
-    train_class_path = "C:\\CT\\Test\\Train\\Class"
-    val_vol_path = "C:\\CT\\Test\\Val\\Volumes"
-    val_class_path = "C:\\CT\\Test\\Val\\Class"
+    vol_src_path = "/home/guy/project/CT/Test/Volumes"
+    seg_src_path = "/home/guy/project/CT/Test/Segmentations"
+    vol_dest_path = "/home/guy/project/CT/Test/Train/Volumes"
+    seg_dest_path = "/home/guy/project/CT/Test/Train/Class"
+    train_vol_path = "/home/guy/project/CT/Test/Train/Volumes"
+    train_class_path = "/home/guy/project/CT/Test/Train/Class"
+    val_vol_path = "/home/guy/project/CT/Test/Val/Volumes"
+    val_class_path = "/home/guy/project/CT/Test/Val/Class"
 else:
-    vol_src_path = "/home/tal/CT/Volumes"
-    seg_src_path = "/home/tal/CT/Segmentations"
-    vol_dest_path = "/home/tal/CT/Train/Volumes"
-    seg_dest_path = "/home/tal/CT/Train/Class"
-    train_vol_path = "/home/tal/CT/Train/Volumes"
-    train_class_path = "/home/tal/CT/Train/Class"
-    val_vol_path = "/home/tal/CT/Val/Volumes"
-    val_class_path = "/home/tal/CT/Val/Class"
+    vol_src_path = "/home/guy/project/CT/Volumes"
+    seg_src_path = "/home/guy/project/CT/Segmentations"
+    vol_dest_path = "/home/guy/project/CT/Train/Volumes"
+    seg_dest_path = "/home/guy/project/CT/Train/Class"
+    train_vol_path = "/home/guy/project/CT/Train/Volumes"
+    train_class_path = "/home/guy/project/CT/Train/Class"
+    val_vol_path = "/home/guy/project/CT/Val/Volumes"
+    val_class_path = "/home/guy/project/CT/Val/Class"
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
-data_prep.prepare_val_train_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, validation_files_ind)
 
-# train_vol_list = os.listdir(train_vol_path)
-# train_class_list = os.listdir(train_class_path)
-# val_vol_path = os.listdir(val_vol_path)
-# val_class_list = os.listdir(val_class_path)
+train_vol_list = os.listdir(train_vol_path)
+train_class_list = os.listdir(train_class_path)
+val_vol_list = os.listdir(val_vol_path)
+val_class_list = os.listdir(val_class_path)
 
 weights = {
     # 5x5 conv, 1 input, 64 outputs
@@ -90,7 +79,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 # Initializing the variables
 init = tf.global_variables_initializer()
 
-print('start tensorflow session...')
+print 'start tensorflow session...'
 
 with tf.Session() as sess:
     sess.run(init)

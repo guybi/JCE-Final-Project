@@ -187,7 +187,7 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
         # get initial random shift number
         g_r_count = 0  # counter for good iters where #kidneys/#livers >= klr
-        r_count = 0  # counter for total number of iterations
+        r_count = 0  # counter for toguy number of iterations
         shifts_list = list()
 
         while (g_r_count < dxy and r_count < 20):
