@@ -93,7 +93,7 @@ def Im2Blks(Im, BlkSz, x_shift=0, y_shift=0, is_vol=True):
     Blk = np.lib.stride_tricks.as_strided(tmpIm, shape=shape, strides=strides)
     Blk = np.reshape(Blk, [L[0] * L[1] * L[2] / BlkSz ** 2, 1, BlkSz, BlkSz])
     return Blk
-/**
+
 #function receives: vol_fn - volume file name
 #                   class_list - list of classification files
 #        returns: file name of classification file which classifies vol_fn file
@@ -345,15 +345,8 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
         vol_list = os.listdir(vol_dest_path)
         seg_list = os.listdir(seg_dest_path)
         if(len(vol_list) != 0 or len(seg_list) != 0):
-            print('Shifted data found. Load from directory...')
-            for i in range(0, len(vol_list)):
-                shifted_input_vol.append(np.array(np.load(vol_dest_path + '/' + vol_list[i])))
-
-            for i in range(0, len(seg_list)):
-                y_res.append(np.array(np.load(seg_dest_path + '/' + seg_list[i])))
-
-            shifted_input_vol = np.array(shifted_input_vol)
-            y_res = np.array(y_res)
+            print('Shifted data found.')
+            return;
         else:
             print('Shifted data directory is empty. Prepare data...')
             prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio,
