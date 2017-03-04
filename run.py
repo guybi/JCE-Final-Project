@@ -4,6 +4,7 @@ import tensorflow as tf
 import numpy as np
 from helpers import data_prep
 from networks.simple_net import build_simple_cnn14
+from networks.triple_net import build_triple_cnn14
 
 
 env = 'test'
@@ -11,14 +12,20 @@ env = 'test'
 seg_ratio = 0.75
 klr = 3  # in percentage
 learning_rate = 0.00001
-batch_size = 200
+batch_size = 1000
 # training_iters = 200000
-training_iters = 2
+training_iters = 20
 display_step = 1
 validation_files_ind = [18,19]
 
-x = tf.placeholder(tf.float32, [batch_size, None, None, None])
-y = tf.placeholder(tf.float32, [batch_size])
+x = tf.placeholder(tf.float32, [None, None, None, None], name='x')
+y = tf.placeholder(tf.float32, [None, None], name='y')
+
+# x_data = tf.placeholder(tf.float32, [batch_size, None, None, None], name='x_data')
+# y_data = tf.placeholder(tf.float32, [batch_size], name='y_data')
+
+batch_x = tf.placeholder(tf.float32, [None, None, None, None], name='batch_x')
+batch_y = tf.placeholder(tf.float32, [None, None], name='batch_y')
 
 if env == 'test':
     # vol_src_path = "/home/tal/CT/Test/Volumes"
@@ -58,34 +65,42 @@ train_class_list = os.listdir(train_class_path)
 
 weights = {
     # 5x5 conv, 1 input, 64 outputs
-    'wc1': tf.Variable(tf.random_normal([5, 5, 1, 64])),
-    # 5x5 conv, 32 inputs, 64 outputs
-    # 'wc2': tf.Variable(tf.random_normal([5, 5, 32, 64])),
-    # fully connected, 5*5*64 inputs, 256 outputs
-    'wd1': tf.Variable(tf.random_normal([5*5*64, 256])),
-    # 256 inputs, 1 outputs (class prediction)
-    'out': tf.Variable(tf.random_normal([256, 1]))
+    'wc1': tf.Variable(tf.truncated_normal([5, 5, 1, 64])),
+    # 5x5 conv, 64 inputs, 32 outputs
+    'wc2': tf.Variable(tf.truncated_normal([3, 3, 64, 32])),
+    # 5x5 conv, 32 inputs, 32 outputs
+    'wc3': tf.Variable(tf.truncated_normal([3, 3, 32, 512])),
+    # fully connected, 5*5*32 inputs, 512 outputs
+    'wd1': tf.Variable(tf.truncated_normal([512, 512])),
+    # fully connected, 5*5*32 inputs, 512 outputs
+    'wd2': tf.Variable(tf.truncated_normal([512, 512])),
+    # 512 inputs, 3 outputs (class prediction)
+    'out': tf.Variable(tf.truncated_normal([512, 3]))
 }
 
 biases = {
-    'bc1': tf.Variable(tf.random_normal([64])),
-    # 'bc2': tf.Variable(tf.random_normal([64])),
-    'bd1': tf.Variable(tf.random_normal([256])),
-    'out': tf.Variable(tf.random_normal([1]))
+    'bc1': tf.Variable(tf.truncated_normal([64])),
+    'bc2': tf.Variable(tf.random_normal([32])),
+    'bc3': tf.Variable(tf.random_normal([512])),
+    'bd1': tf.Variable(tf.truncated_normal([512])),
+    'bd2': tf.Variable(tf.truncated_normal([512])),
+    'out': tf.Variable(tf.truncated_normal([3]))
 }
 
-pred = build_simple_cnn14(x, weights, biases)
-
-
+pred = build_triple_cnn14(x, weights, biases)
 
 # Define loss and optimizer
-# cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, np.array(y_data).reshape(y_data.shape[0], 1)))
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), y))
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
+cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
+
+# optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
+optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
+                                       momentum=0.9,
+                                       use_nesterov=True,
+                                       name='momentum').minimize(cost)
 
 # Evaluate model
-correct_pred = tf.equal(tf.argmax(pred, 1), tf.argmax(y_data, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+# correct_pred = tf.equal(tf.argmax(pred, axis=1), tf.cast(batch_y, tf.int64))
+# accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
 # Initializing the variables
 init = tf.global_variables_initializer()
@@ -96,37 +111,82 @@ with tf.Session() as sess:
     sess.run(init)
     step = 1
 
-    for vol_f in train_vol_list:
-        class_f = data_prep.ret_class_file(vol_f, train_class_list)
-        x_data = np.load(train_vol_path + "\\" + vol_f)
-        y_data = np.load(train_class_path + "\\" + class_f)
+    # Keep training until reach max iterations
+    while step < training_iters:
+        for vol_f in train_vol_list:
+            print('training on', vol_f)
+            class_f = data_prep.ret_class_file(vol_f, train_class_list)
+            x_data = np.load(train_vol_path + "\\" + vol_f).astype(dtype='float32')
+            y_data = np.load(train_class_path + "\\" + class_f).astype(dtype='float32')
 
-        # Keep training until reach max iterations
-        while step < training_iters:
-            batch_x, batch_y = tf.train.batch([x_data, y_data], batch_size=batch_size, enqueue_many=True, capacity=32)
+            # batch_x, batch_y = tf.train.batch([x_data, y_data],
+            #                                   batch_size=[batch_size],
+            #                                   num_threads=4,
+            #                                   enqueue_many=True,
+            #                                   capacity=50000)
+
+            batch_x = tf.train.batch([x_data],
+                                      batch_size=[batch_size],
+                                      num_threads=4,
+                                      enqueue_many=True,
+                                      capacity=50000)
+
+            batch_y = tf.train.batch([y_data],
+                                      batch_size=[batch_size*3],
+                                      num_threads=4,
+                                      enqueue_many=True,
+                                      capacity=50000)
+
+            batch_y = tf.reshape(batch_y, shape=(1000,3))
+
+            # batch_x, batch_y = tf.train.shuffle_batch([x_data, y_data],
+            #                                           batch_size=batch_size,
+            #                                           enqueue_many=True,
+            #                                           capacity=50000,
+            #                                           min_after_dequeue=1)
+
+
+            # cost = tf.reduce_mean(tf.cast(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), batch_y), tf.float32))
+            # cost = tf.reduce_mean(tf.cast(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), tf.ones_like(batch_y)), tf.float32))
+            # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
+
+            # correct_pred = tf.equal(tf.argmax(pred, axis=1), tf.cast(batch_y, tf.int64))
+            # accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
             # test_batch_x, test_batch_y = tf.train.shuffle_batch(
             #     [x_data, y_data], batch_size=128,
             #     capacity=2000,
             #     min_after_dequeue=1000)
+
+            # Evaluate model
+            correct_pred = tf.equal(tf.argmax(pred, axis=0), tf.argmax(batch_y, axis=0))
+            accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(coord=coord)
-            # batch_x, batch_y = sess.run([batch_x, batch_y])
+            batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
 
             # Run optimization op (backprop)
-            sess.run(optimizer, feed_dict={x: batch_x, y: batch_y})
+            sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
             if step % display_step == 0:
                 # Calculate batch loss and accuracy
-                loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x,
-                                                                  y: batch_y})
-                print("Iter " + str(step*batch_size) + ", Minibatch Loss= " + \
-                      "{:.6f}".format(loss) + ", Training Accuracy= " + \
+                loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval,
+                                                                  y: batch_y_eval})
+                print("Iter " + str(step*batch_size) + ", Minibatch Loss = " + \
+                      "{:.6f}".format(loss) + ", Training Accuracy = " + \
                       "{:.5f}".format(acc))
+
+                # print("pred: ")
+                # print(sess.run(pred, feed_dict={x: batch_x_eval, y: batch_y_eval}))
+                #
+                # print("batch_y_eval: ")
+                # print(batch_y_eval)
             step += 1
         print("Optimization Finished!")
 
-    # print("Testing Accuracy:", \
-    #     sess.run(accuracy, feed_dict={x: batch_x,
-    #                                   y: batch_y}))
+    print("Testing Accuracy:", \
+        sess.run(accuracy, feed_dict={x: batch_x,
+                                      y: batch_y}))
 
     coord.request_stop()
     coord.join(threads)
