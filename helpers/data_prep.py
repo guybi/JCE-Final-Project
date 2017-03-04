@@ -3,7 +3,6 @@ import SimpleITK as stk
 import os
 import random
 from PIL import Image
-import tensorflow as tf
 from random import shuffle
 
 # classification index value of nothing, liver and kidney
@@ -33,7 +32,7 @@ def vol_size_reduce(input_im, r, start_im, end_im):
 
     for i in range(start_im, end_im):
         im = Image.fromarray(input_im[i, :, :])
-        im = im.resize((d[1] / r, d[2] / r), Image.BICUBIC)  # reduce image size
+        im = im.resize((int(d[1] / r), int(d[2] / r)), Image.BICUBIC)  # reduce image size
         tmp = np.array(im)  # convert back to numpy array
         res_list.append(tmp)
 
@@ -46,7 +45,7 @@ def seg_size_reduce(input_im, r, start_im, end_im):
 
     for i in range(start_im, end_im):
         im = Image.fromarray(input_im[i, :, :])
-        im = im.resize((d[1] / r, d[2] / r), Image.NEAREST)  # reduce image size
+        im = im.resize((int(d[1] / r), int(d[2] / r)), Image.NEAREST)  # reduce image size
         tmp = np.array(im)  # convert back to numpy array
         res_list.append(tmp)
 
@@ -358,3 +357,49 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
         prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
         print('Normalize data...')
         norm_data(vol_dest_path, seg_dest_path)
+
+
+def norm_data_rand(vol, cat):
+    # get indexes of each type of patch
+    liver_ind = np.where(cat == liver)
+    kidney_ind = np.where(cat == kidney)
+    nothing_ind = np.where(cat == nothing)
+
+    # get all liver patches
+    livers = vol[liver_ind[0], :, :, :]
+    # get nothings patches in random order
+    tmp = np.array(vol[nothing_ind[0], :, :, :], dtype=np.float32)
+    np.random.shuffle(tmp)
+    nothings = tmp
+    # create extended kidneys data
+    if (len(kidney_ind[0] != 0)):
+        r = int(len(liver_ind[0]) / len(kidney_ind[0]))
+        tmp = vol[kidney_ind[0]]
+        d = tmp.shape
+        kidneys = np.zeros((r * d[0], d[1], d[2], d[3]), dtype=np.float32)
+        for k in range(r):
+            kidneys[k * d[0]:(k + 1) * d[0], :, :, :] = vol[kidney_ind[0]]
+
+    # create new classification array
+    if (len(kidney_ind[0] != 0)):
+        new_class = np.zeros(len(livers) + len(kidneys) + len(livers), dtype=np.int32)
+        new_class[:len(livers)] = liver
+        new_class[len(livers):len(livers) + len(kidneys)] = kidney
+        new_class[len(livers) + len(kidneys):] = nothing
+    else:
+        new_class = np.zeros(2 * len(livers), dtype=np.int32)
+        new_class[:len(livers)] = liver
+        new_class[len(livers):] = nothing
+
+    # create a new and smaller numpy volumes array
+    if (len(kidney_ind[0] != 0)):
+        new_vol = np.zeros((len(livers) + len(kidneys) + len(livers), d[1], d[2], d[3]), dtype=np.float32)
+        new_vol[:len(livers), :, :, :] = livers
+        new_vol[len(livers):len(livers) + len(kidneys), :, :, :] = kidneys
+        new_vol[len(livers) + len(kidneys):, :, :, :] = nothings[0:len(livers)]
+    else:
+        new_vol = np.zeros((2 * len(livers), d[1], d[2], d[3]), dtype=np.float32)
+        new_vol[:len(livers), :, :, :] = livers
+        new_vol[len(livers):, :, :, :] = nothings[0:len(livers)]
+
+    return new_vol, new_class

@@ -24,7 +24,7 @@ def build_triple_cnn14(x, weights, biases):
     conv1 = pool.maxpool2d(conv1, k=2)
 
     # ReLU on conv1
-    conv1 = tf.nn.relu(conv1)
+    # conv1 = tf.nn.relu(conv1)
 
     filter_2 = tf.Variable([3, 3, 1, 1], dtype='float32', name='filter_2')
     stride_2 = [1, 1, 1, 1]
@@ -34,10 +34,10 @@ def build_triple_cnn14(x, weights, biases):
     conv2 = conv.conv2d(x=conv1, W=weights['wc2'], b=biases['bc2'], filter=filter_2, strides=stride_2, padding=padding_2)
 
     # max pooling (down-sampling)
-    conv2 = pool.maxpool2d(conv2, k=2)
+    # conv2 = pool.maxpool2d(conv2, k=2)
 
     # RelU on conv2
-    conv2 = tf.nn.relu(conv2)
+    # conv2 = tf.nn.relu(conv2)
 
     filter_3 = tf.Variable([3, 3, 1, 1], dtype='float32', name='filter_3')
     stride_3 = [1, 1, 1, 1]
@@ -47,10 +47,10 @@ def build_triple_cnn14(x, weights, biases):
     conv3 = conv.conv2d(x=conv2, W=weights['wc3'], b=biases['bc3'], filter=filter_3, strides=stride_3, padding=padding_3)
 
     # max pooling (down-sampling)
-    conv3 = pool.maxpool2d(conv3, k=2)
+    # conv3 = pool.maxpool2d(conv3, k=2)
 
     # ReLU on conv3
-    conv3 = tf.nn.relu(conv3)
+    # conv3 = tf.nn.relu(conv3)
 
 
     # fully connected layer
