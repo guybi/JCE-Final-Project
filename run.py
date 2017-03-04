@@ -12,9 +12,11 @@ env = 'test'
 seg_ratio = 0.75
 klr = 3  # in percentage
 learning_rate = 0.00001
+# learning_rate = 0.001
+momentum = 0.9
 batch_size = 1000
-# training_iters = 200000
-training_iters = 20
+training_iters = 200000
+# training_iters = 20
 display_step = 1
 validation_files_ind = [18,19]
 
@@ -56,26 +58,26 @@ train_class_list = os.listdir(train_class_path)
 
 weights = {
     # 5x5 conv, 1 input, 64 outputs
-    'wc1': tf.Variable(tf.truncated_normal([5, 5, 1, 64])),
+    'wc1': tf.Variable(tf.random_normal([5, 5, 1, 64])),
     # 5x5 conv, 64 inputs, 32 outputs
-    'wc2': tf.Variable(tf.truncated_normal([3, 3, 64, 32])),
+    'wc2': tf.Variable(tf.random_normal([3, 3, 64, 32])),
     # 5x5 conv, 32 inputs, 32 outputs
-    'wc3': tf.Variable(tf.truncated_normal([3, 3, 32, 512])),
+    'wc3': tf.Variable(tf.random_normal([3, 3, 32, 512])),
     # fully connected, 5*5*32 inputs, 512 outputs
-    'wd1': tf.Variable(tf.truncated_normal([512, 512])),
+    'wd1': tf.Variable(tf.random_normal([512, 512])),
     # fully connected, 5*5*32 inputs, 512 outputs
-    'wd2': tf.Variable(tf.truncated_normal([512, 512])),
+    'wd2': tf.Variable(tf.random_normal([512, 512])),
     # 512 inputs, 3 outputs (class prediction)
-    'out': tf.Variable(tf.truncated_normal([512, 3]))
+    'out': tf.Variable(tf.random_normal([512, 3]))
 }
 
 biases = {
-    'bc1': tf.Variable(tf.truncated_normal([64])),
+    'bc1': tf.Variable(tf.random_normal([64])),
     'bc2': tf.Variable(tf.random_normal([32])),
     'bc3': tf.Variable(tf.random_normal([512])),
-    'bd1': tf.Variable(tf.truncated_normal([512])),
-    'bd2': tf.Variable(tf.truncated_normal([512])),
-    'out': tf.Variable(tf.truncated_normal([3]))
+    'bd1': tf.Variable(tf.random_normal([512])),
+    'bd2': tf.Variable(tf.random_normal([512])),
+    'out': tf.Variable(tf.random_normal([3]))
 }
 
 pred = build_triple_cnn14(x, weights, biases)
@@ -83,10 +85,12 @@ pred = build_triple_cnn14(x, weights, biases)
 # Define loss and optimizer
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
 
-# optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
+# optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
+#                                               name='gradient_descent').minimize(cost)
 optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-                                       momentum=0.9,
+                                       momentum=momentum,
                                        use_nesterov=True,
+                                       use_locking=True,
                                        name='momentum').minimize(cost)
 
 # Evaluate model
@@ -119,54 +123,67 @@ with tf.Session() as sess:
 
             batch_x = tf.train.shuffle_batch([x_data],
                                       batch_size=[batch_size],
-                                      num_threads=4,
+                                      num_threads=1,
                                       enqueue_many=True,
                                       capacity=50000,
-                                      min_after_dequeue=10000)
+                                      min_after_dequeue=2000)
 
             batch_y = tf.train.shuffle_batch([y_data],
                                       batch_size=[batch_size*9*3],
-                                      num_threads=4,
+                                      num_threads=1,
                                       enqueue_many=True,
                                       capacity=50000,
-                                      min_after_dequeue=10000)
+                                      min_after_dequeue=2000)
 
             batch_y = tf.reshape(batch_y, shape=(9000,3))
-
-            # batch_x, batch_y = tf.train.shuffle_batch([x_data, y_data],
-            #                                           batch_size=batch_size,
-            #                                           enqueue_many=True,
-            #                                           capacity=50000,
-            #                                           min_after_dequeue=1)
 
             # test_batch_x, test_batch_y = tf.train.shuffle_batch(
             #     [x_data, y_data], batch_size=128,
             #     capacity=2000,
             #     min_after_dequeue=1000)
 
-            coord = tf.train.Coordinator()
-            threads = tf.train.start_queue_runners(coord=coord)
-            batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
+            # coord = tf.train.Coordinator()
+            # threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+            threads = tf.train.start_queue_runners(sess=sess)
 
-            # Run optimization op (backprop)
+            batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
             sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
             if step % display_step == 0:
                 # Calculate batch loss and accuracy
-                loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval,
-                                                                                    y: batch_y_eval})
-                print(cp)
-                print("Iter " + str(step*batch_size) + ", Minibatch Loss = " + \
+                # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval,
+                loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval,
+                                                                  y: batch_y_eval})
+                # print(cp)
+                print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
                       "{:.6f}".format(loss) + ", Training Accuracy = " + \
                       "{:.5f}".format(acc))
-
-                # print("pred: ")
-                # print(sess.run(pred, feed_dict={x: batch_x_eval, y: batch_y_eval}))
-                #
-                # print("batch_y_eval: ")
-                # print(batch_y_eval)
             step += 1
-    coord.request_stop()
-    coord.join(threads)
+
+            # try:
+            #     while not coord.should_stop():
+            #         batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
+            #         # Run training
+            #         sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
+            #         if step % display_step == 0:
+            #             # Calculate batch loss and accuracy
+            #             # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval,
+            #             loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval,
+            #                                                                                 y: batch_y_eval})
+            #             # print(cp)
+            #             print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
+            #                   "{:.6f}".format(loss) + ", Training Accuracy = " + \
+            #                   "{:.5f}".format(acc))
+            #         step += 1
+            #
+            # except tf.errors.OutOfRangeError:
+            #     print('Done training -- epoch limit reached')
+            # finally:
+            #     # When done, ask the threads to stop.
+            #     coord.request_stop()
+
+            # coord.request_stop()
+            # coord.join(threads)
+
     print("Optimization Finished!")
 
     # print("Testing Accuracy:", \
