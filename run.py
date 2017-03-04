@@ -7,14 +7,14 @@ from networks.simple_net import build_simple_cnn14
 from networks.triple_net import build_triple_cnn14
 
 
-env = 'prod'
+env = 'test'
 
 seg_ratio = 0.75
 klr = 3  # in percentage
 learning_rate = 0.00001
 batch_size = 1000
 # training_iters = 200000
-training_iters = 200
+training_iters = 20
 display_step = 1
 validation_files_ind = [18,19]
 
@@ -117,17 +117,19 @@ with tf.Session() as sess:
             #                                   enqueue_many=True,
             #                                   capacity=50000)
 
-            batch_x = tf.train.batch([x_data],
+            batch_x = tf.train.shuffle_batch([x_data],
                                       batch_size=[batch_size],
                                       num_threads=4,
                                       enqueue_many=True,
-                                      capacity=50000)
+                                      capacity=50000,
+                                      min_after_dequeue=10000)
 
-            batch_y = tf.train.batch([y_data],
+            batch_y = tf.train.shuffle_batch([y_data],
                                       batch_size=[batch_size*9*3],
                                       num_threads=4,
                                       enqueue_many=True,
-                                      capacity=50000)
+                                      capacity=50000,
+                                      min_after_dequeue=10000)
 
             batch_y = tf.reshape(batch_y, shape=(9000,3))
 
@@ -137,19 +139,10 @@ with tf.Session() as sess:
             #                                           capacity=50000,
             #                                           min_after_dequeue=1)
 
-
-            # cost = tf.reduce_mean(tf.cast(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), batch_y), tf.float32))
-            # cost = tf.reduce_mean(tf.cast(tf.nn.softmax_cross_entropy_with_logits(tf.transpose(pred), tf.ones_like(batch_y)), tf.float32))
-            # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
-
             # test_batch_x, test_batch_y = tf.train.shuffle_batch(
             #     [x_data, y_data], batch_size=128,
             #     capacity=2000,
             #     min_after_dequeue=1000)
-
-            # Evaluate model
-            # correct_pred = tf.equal(tf.argmax(pred, axis=0), tf.argmax(batch_y, axis=0))
-            # accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(coord=coord)
@@ -172,12 +165,12 @@ with tf.Session() as sess:
                 # print("batch_y_eval: ")
                 # print(batch_y_eval)
             step += 1
+    coord.request_stop()
+    coord.join(threads)
     print("Optimization Finished!")
 
     # print("Testing Accuracy:", \
     #     sess.run(accuracy, feed_dict={x: x_data,
     #                                   y: y_data}))
 
-    coord.request_stop()
-    coord.join(threads)
     sess.close()
