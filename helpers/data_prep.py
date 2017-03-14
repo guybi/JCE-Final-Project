@@ -307,7 +307,7 @@ def norm_data(vol_src_path, seg_src_path):
             tmp = vol[kidney_ind[0]]
             d = tmp.shape
             kidneys = np.zeros((r * d[0], d[1], d[2], d[3]), dtype=np.float32)
-            for k in range(r):
+            for k in range(int(r)):
                 kidneys[k * d[0]:(k + 1) * d[0], :, :, :] = vol[kidney_ind[0]]
 
         # create new classification array
@@ -338,8 +338,6 @@ def norm_data(vol_src_path, seg_src_path):
 
 
 def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
-    shifted_input_vol = []
-    y_res = []
     if (os.path.exists(vol_dest_path) and os.path.exists(seg_dest_path)):
         vol_list = os.listdir(vol_dest_path)
         seg_list = os.listdir(seg_dest_path)

@@ -3,9 +3,8 @@ import tensorflow as tf
 from networks.layers import conv, pool
 
 input_size = 14
-dropout = 0.5
-out_size = 3  # 3 class options
-learning_rate = 0.00001
+dropout = 0.2
+
 
 def build_triple_cnn14(x, weights, biases):
 
@@ -18,10 +17,10 @@ def build_triple_cnn14(x, weights, biases):
     padding_1 = 'VALID'
 
     # first convolution layer
-    conv1 = conv.conv2d(x=input, W=weights['wc1'], b=biases['bc1'], filter=filter_1, strides=stride_1, padding=padding_1)
+    conv1 = conv.conv2d(x=input, W=weights['wc1'], b=biases['bc1'], filter=filter_1, strides=stride_1, padding=padding_1, name='conv1')
 
     # max pooling (down-sampling)
-    conv1 = pool.maxpool2d(conv1, k=2)
+    conv1 = pool.maxpool2d(conv1, k=2, name='maxpool1')
 
     # ReLU on conv1
     # conv1 = tf.nn.relu(conv1)
@@ -31,7 +30,7 @@ def build_triple_cnn14(x, weights, biases):
     padding_2 = 'VALID'
 
     # second convolution layer
-    conv2 = conv.conv2d(x=conv1, W=weights['wc2'], b=biases['bc2'], filter=filter_2, strides=stride_2, padding=padding_2)
+    conv2 = conv.conv2d(x=conv1, W=weights['wc2'], b=biases['bc2'], filter=filter_2, strides=stride_2, padding=padding_2, name='conv2')
 
     # max pooling (down-sampling)
     # conv2 = pool.maxpool2d(conv2, k=2)
@@ -44,10 +43,10 @@ def build_triple_cnn14(x, weights, biases):
     padding_3 = 'SAME'
 
     # third convolution layer
-    conv3 = conv.conv2d(x=conv2, W=weights['wc3'], b=biases['bc3'], filter=filter_3, strides=stride_3, padding=padding_3)
+    conv3 = conv.conv2d(x=conv2, W=weights['wc3'], b=biases['bc3'], filter=filter_3, strides=stride_3, padding=padding_3, name='conv3')
 
     # max pooling (down-sampling)
-    # conv3 = pool.maxpool2d(conv3, k=2)
+    conv3 = pool.maxpool2d(conv3, k=2, name='maxpool2')
 
     # ReLU on conv3
     # conv3 = tf.nn.relu(conv3)

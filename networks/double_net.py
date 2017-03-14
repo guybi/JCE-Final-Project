@@ -3,9 +3,8 @@ import tensorflow as tf
 from networks.layers import conv, pool
 
 input_size = 14
-dropout = 0.5
-out_size = 3  # 3 class options
-learning_rate = 0.00001
+dropout = 0.2
+
 
 def build_double_cnn14(x, weights, biases):
 
@@ -13,23 +12,25 @@ def build_double_cnn14(x, weights, biases):
     input = tf.reshape(x, shape=[-1, input_size, input_size, 1]) # in_channels=64?
 
     # first convolution layer parameters
-    filter = tf.Variable([5, 5, 1, 1], dtype='float32', name='filter')
+    filter_1 = [5, 5, 1, 1]
     stride_1 = [1,1,1,1]
     padding_1 = 'VALID'
 
     # first convolution layer
-    conv1 = conv.conv2d(x=input, W=weights['wc1'], b=biases['bc1'], filter=filter, strides=stride_1, padding=padding_1)
+    conv1 = conv.conv2d(x=input, W=weights['wc1'], b=biases['bc1'], filter=filter_1, strides=stride_1, padding=padding_1, name='conv1')
 
     # max pooling (down-sampling)
-    conv1 = pool.maxpool2d(conv1, k=2)
+    conv1 = pool.maxpool2d(conv1, k=2, name='maxpool1')
 
+    filter_2 = [3, 3, 1, 1]
+    stride_2 = [1, 1, 1, 1]
+    padding_2 = 'VALID'
 
     # second convolution layer
-    conv2 = conv.conv2d(x=conv1, W=weights['wc2'], b=biases['bc2'], filter=filter, strides=stride_2, padding=padding_2)
+    conv2 = conv.conv2d(x=conv1, W=weights['wc2'], b=biases['bc2'], filter=filter_2, strides=stride_2, padding=padding_2, name='conv2')
 
     # max pooling (down-sampling)
-    conv2 = pool.maxpool2d(conv2, k=2)
-
+    conv2 = pool.maxpool2d(conv2, k=2, name='maxpool2')
 
     # fully connected layer
     full_size = 256
