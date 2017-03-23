@@ -19,6 +19,8 @@ def build_simple_cnn14(x, weights, biases):
     # first convolution layer
     conv1 = conv.conv2d(x=input, W=weights['wc1'], b=biases['bc1'], filter=filter, strides=stride_1, padding=padding_1, name='conv1')
 
+    tf.summary.histogram("wc1", weights['wc1'])
+    tf.summary.histogram("bc1", biases['bc1'])
     # max pooling (down-sampling)
     conv1 = pool.maxpool2d(conv1, k=2, name='maxpool1')
 
@@ -27,10 +29,19 @@ def build_simple_cnn14(x, weights, biases):
     fc1 = tf.add(tf.matmul(fc1, weights['wd1']), biases['bd1'])
     fc1 = tf.nn.relu(fc1)
 
+    tf.summary.histogram("weights", weights['wd1'])
+    tf.summary.histogram("bd1", biases['bd1'])
+
     # Apply Dropout
     fc1 = tf.nn.dropout(fc1, dropout)
 
+    tf.summary.histogram("activation", fc1)
+
+
     # Output
     output = tf.add(tf.matmul(fc1, weights['out']), biases['out'])
+
+    tf.summary.histogram("weights", weights['out'])
+    tf.summary.histogram("out", biases['out'])
 
     return output

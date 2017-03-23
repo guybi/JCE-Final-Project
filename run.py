@@ -9,7 +9,7 @@ from networks.triple_net import build_triple_cnn14
 
 
 env = 'test'
-network = 'triple'
+network = 'simple'
 
 seg_ratio = 0.75
 klr = 3  # in percentage
@@ -18,8 +18,8 @@ learning_rate = 0.0000001
 # momentum = 0.9
 momentum = 0.75
 batch_size = 1024
-training_iters = 200000
-# training_iters = 20
+# training_iters = 200000
+training_iters = 2
 display_step = 1
 validation_files_ind = [18,19]
 n_classes = 3
@@ -148,6 +148,8 @@ optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
 correct_pred = tf.equal(tf.argmax(pred, axis=1), tf.argmax(y, axis=1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 
+merged_summary = tf.summary.merge_all()
+
 # Initializing the variables
 init = tf.global_variables_initializer()
 
@@ -156,6 +158,9 @@ print('start tensorflow session...')
 with tf.Session() as sess:
     sess.run(init)
     step = 1
+
+    writer = tf.summary.FileWriter("log")
+    writer.add_graph(sess.graph)
 
     # Keep training until reach max iterations
     while step < training_iters:
@@ -212,6 +217,10 @@ with tf.Session() as sess:
             threads = tf.train.start_queue_runners(sess=sess)
 
             batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
+
+            s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
+            writer.add_summary(s, step)
+
             sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
             if step % display_step == 0:
                 # Calculate batch loss and accuracy
@@ -222,6 +231,7 @@ with tf.Session() as sess:
                 print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
                       "{:.6f}".format(loss) + ", Training Accuracy = " + \
                       "{:.5f}".format(acc))
+
             step += 1
 
             # try:
