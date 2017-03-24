@@ -13,14 +13,14 @@ network = 'simple'
 
 seg_ratio = 0.75
 klr = 3  # in percentage
-# learning_rate = 0.00001
-learning_rate = 0.0000001
-# momentum = 0.9
-momentum = 0.75
+learning_rate = 0.00001
+# learning_rate = 0.0000001
+momentum = 0.9
+# momentum = 0.75
 batch_size = 1024
 # training_iters = 200000
-training_iters = 2
-display_step = 1
+training_iters = 200
+display_step = 5
 validation_files_ind = [18,19]
 n_classes = 3
 
@@ -134,19 +134,27 @@ if network == 'triple':
     pred = build_triple_cnn14(x, weights, biases)
 
 # Define loss and optimizer
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
+with tf.name_scope('cost'):
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
+tf.summary.scalar("cost", cost)
 
-# optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
-#                                               name='gradient_descent').minimize(cost)
-optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-                                       momentum=momentum,
-                                       use_nesterov=True,
-                                       use_locking=True,
-                                       name='momentum').minimize(cost)
+with tf.name_scope('train'):
+    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
+    #                                               name='gradient_descent').minimize(cost)
+    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
+                                           momentum=momentum,
+                                           use_nesterov=True,
+                                           use_locking=True,
+                                           name='momentum').minimize(cost)
 
 # Evaluate model
-correct_pred = tf.equal(tf.argmax(pred, axis=1), tf.argmax(y, axis=1))
-accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+with tf.name_scope('accuracy'):
+    with tf.name_scope('correct_prediction'):
+        correct_pred = tf.equal(tf.argmax(pred, axis=1), tf.argmax(y, axis=1))
+    with tf.name_scope('accuracy'):
+        accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+# tf.summary.scalar("accuracy", accuracy)
+tf.summary.scalar("accuracy", accuracy)
 
 merged_summary = tf.summary.merge_all()
 
@@ -159,8 +167,11 @@ with tf.Session() as sess:
     sess.run(init)
     step = 1
 
-    writer = tf.summary.FileWriter("log")
-    writer.add_graph(sess.graph)
+    writer = tf.summary.FileWriter("log", sess.graph)
+
+    # coord = tf.train.Coordinator()
+    # threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    # threads = tf.train.start_queue_runners(sess=sess)
 
     # Keep training until reach max iterations
     while step < training_iters:
@@ -178,17 +189,17 @@ with tf.Session() as sess:
             #                                   capacity=50000)
 
             batch_x = tf.train.batch([x_data],
-                                      batch_size=[batch_size],
-                                      num_threads=1,
-                                      enqueue_many=True,
-                                      capacity=50000)
+                                     batch_size=[batch_size],
+                                     num_threads=1,
+                                     enqueue_many=True,
+                                     capacity=50000)
 
             if network == 'simple':
                 batch_y = tf.train.batch([y_data],
-                                          batch_size=[batch_size * 25 * 3],
-                                          num_threads=1,
-                                          enqueue_many=True,
-                                          capacity=50000)
+                                         batch_size=[batch_size * 25 * 3],
+                                         num_threads=1,
+                                         enqueue_many=True,
+                                         capacity=50000)
                 batch_y = tf.reshape(batch_y, shape=(25600, 3))
 
             if network == 'double':
@@ -212,17 +223,14 @@ with tf.Session() as sess:
             #     capacity=2000,
             #     min_after_dequeue=1000)
 
-            # coord = tf.train.Coordinator()
-            # threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-            threads = tf.train.start_queue_runners(sess=sess)
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
             batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
 
-            s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
-            writer.add_summary(s, step)
-
             sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
             if step % display_step == 0:
+
                 # Calculate batch loss and accuracy
                 # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval, y: batch_y_eval})
                 loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval,
@@ -232,7 +240,12 @@ with tf.Session() as sess:
                       "{:.6f}".format(loss) + ", Training Accuracy = " + \
                       "{:.5f}".format(acc))
 
+                s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
+                # writer.add_summary(s, step)
             step += 1
+
+        coord.request_stop()
+        coord.join(threads)
 
             # try:
             #     while not coord.should_stop():
@@ -248,6 +261,9 @@ with tf.Session() as sess:
             #             print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
             #                   "{:.6f}".format(loss) + ", Training Accuracy = " + \
             #                   "{:.5f}".format(acc))
+            #
+            #             # s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
+            #             # writer.add_summary(s, step)
             #         step += 1
             #
             # except tf.errors.OutOfRangeError:
@@ -255,9 +271,6 @@ with tf.Session() as sess:
             # finally:
             #     # When done, ask the threads to stop.
             #     coord.request_stop()
-
-            # coord.request_stop()
-            # coord.join(threads)
 
     print("Optimization Finished!")
 
