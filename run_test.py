@@ -9,12 +9,12 @@ from networks.triple_net import build_triple_cnn14
 
 
 env = 'test'
-network = 'simple'
+network = 'triple'
 
 seg_ratio = 0.75
 klr = 3  # in percentage
-# learning_rate = 0.0001
-learning_rate = 0.0000001
+learning_rate = 0.0001
+# learning_rate = 0.0000001
 momentum = 0.9
 # momentum = 0.2
 batch_size = 1024
@@ -139,13 +139,13 @@ with tf.name_scope('cost'):
 tf.summary.scalar("cost", cost)
 
 with tf.name_scope('train'):
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
-                                                  name='gradient_descent').minimize(cost)
-    # optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-    #                                        momentum=momentum,
-    #                                        use_nesterov=True,
-    #                                        use_locking=True,
-    #                                        name='momentum').minimize(cost)
+    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
+    #                                               name='gradient_descent').minimize(cost)
+    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
+                                           momentum=momentum,
+                                           use_nesterov=True,
+                                           use_locking=True,
+                                           name='momentum').minimize(cost)
 
 # Evaluate model
 with tf.name_scope('accuracy'):
@@ -167,84 +167,63 @@ with tf.Session() as sess:
     step = 1
 
     writer = tf.summary.FileWriter("log", sess.graph)
+    coord = tf.train.Coordinator()
 
     # Keep training until reach max iterations
     while step < training_iters:
-        for vol_f in train_vol_list:
-            print('training on', vol_f)
-            class_f = data_prep.ret_class_file(vol_f, train_class_list)
-            x_data = np.load(train_vol_path + "\\" + vol_f)
-            y_data = np.load(train_class_path + "\\" + class_f)
-            x_data, y_data = data_prep.norm_data_rand(x_data, y_data)
+        try:
+            epochs = 1
+            min_epochs = 100
 
-            # batch_x, batch_y = tf.train.batch([x_data, y_data],
-            #                                   batch_size=[batch_size],
-            #                                   num_threads=4,
-            #                                   enqueue_many=True,
-            #                                   capacity=50000)
+            while not coord.should_stop():
+                for vol_f in train_vol_list:
+                    print('training on', vol_f)
+                    class_f = data_prep.ret_class_file(vol_f, train_class_list)
+                    x_data = np.load(train_vol_path + "\\" + vol_f)
+                    y_data = np.load(train_class_path + "\\" + class_f)
+                    x_data, y_data = data_prep.norm_data_rand(x_data, y_data)
 
-            batch_x = tf.train.batch([x_data],
-                                     batch_size=[batch_size],
-                                     num_threads=1,
-                                     enqueue_many=True,
-                                     capacity=50000)
+                    # batch_x, batch_y = tf.train.batch([x_data, y_data],
+                    #                                   batch_size=[batch_size],
+                    #                                   num_threads=4,
+                    #                                   enqueue_many=True,
+                    #                                   capacity=50000)
 
-            if network == 'simple':
-                batch_y = tf.train.batch([y_data],
-                                         batch_size=[batch_size * 25 * 3],
-                                         num_threads=1,
-                                         enqueue_many=True,
-                                         capacity=50000)
-                batch_y = tf.reshape(batch_y, shape=(25600, 3))
+                    batch_x = tf.train.batch([x_data],
+                                             batch_size=[batch_size],
+                                             num_threads=1,
+                                             enqueue_many=True,
+                                             capacity=50000)
 
-            if network == 'double':
-                batch_y = tf.train.batch([y_data],
-                                         batch_size=[batch_size*4*3],
-                                         num_threads=1,
-                                         enqueue_many=True,
-                                         capacity=50000)
-                batch_y = tf.reshape(batch_y, shape=(4096, 3))
+                    if network == 'simple':
+                        batch_y = tf.train.batch([y_data],
+                                                 batch_size=[batch_size * 25 * 3],
+                                                 num_threads=1,
+                                                 enqueue_many=True,
+                                                 capacity=50000)
+                        batch_y = tf.reshape(batch_y, shape=(25600, 3))
 
-            if network == 'triple':
-                batch_y = tf.train.batch([y_data],
-                                         batch_size=[batch_size*4*3],
-                                         num_threads=1,
-                                         enqueue_many=True,
-                                         capacity=50000)
-                batch_y = tf.reshape(batch_y, shape=(4096, 3))
+                    if network == 'double':
+                        batch_y = tf.train.batch([y_data],
+                                                 batch_size=[batch_size * 4 * 3],
+                                                 num_threads=1,
+                                                 enqueue_many=True,
+                                                 capacity=50000)
+                        batch_y = tf.reshape(batch_y, shape=(4096, 3))
 
-            # test_batch_x, test_batch_y = tf.train.shuffle_batch(
-            #     [x_data, y_data], batch_size=128,
-            #     capacity=2000,
-            #     min_after_dequeue=1000)
+                    if network == 'triple':
+                        batch_y = tf.train.batch([y_data],
+                                                 batch_size=[batch_size * 4 * 3],
+                                                 num_threads=1,
+                                                 enqueue_many=True,
+                                                 capacity=50000)
+                        batch_y = tf.reshape(batch_y, shape=(4096, 3))
 
-            coord = tf.train.Coordinator()
-            threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-
-            # batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
-
-        #     sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
-        #     if step % display_step == 0:
-        #
-        #         # Calculate batch loss and accuracy
-        #         # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval, y: batch_y_eval})
-        #         loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval,
-        #                                                           y: batch_y_eval})
-        #         # print(cp)
-        #         print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
-        #               "{:.6f}".format(loss) + ", Training Accuracy = " + \
-        #               "{:.5f}".format(acc))
-        #
-        #         s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
-        #         # writer.add_summary(s, step)
-        #     step += 1
-        #
-        # coord.request_stop()
-        # coord.join(threads)
-            try:
-                epochs = 1
-                min_epochs = 100
-                while not coord.should_stop():
+                    # test_batch_x, test_batch_y = tf.train.shuffle_batch(
+                    #     [x_data, y_data], batch_size=128,
+                    #     capacity=2000,
+                    #     min_after_dequeue=1000)
+                    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
                     batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
                     # Run training
                     sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
@@ -265,13 +244,12 @@ with tf.Session() as sess:
                     step += 1
                     epochs += 1
 
-            except tf.errors.OutOfRangeError:
-                print('Done training -- epoch limit reached')
-            finally:
-                # When done, ask the threads to stop.
-
-                pass
-        coord.request_stop()
+        except tf.errors.OutOfRangeError:
+            print('Done training -- epoch limit reached')
+        finally:
+            # When done, ask the threads to stop.
+            coord.request_stop()
+            # pass
 
     print("Optimization Finished!")
 
