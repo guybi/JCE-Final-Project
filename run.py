@@ -2,13 +2,18 @@
 import os
 import tensorflow as tf
 import numpy as np
+from random import shuffle
 from helpers import data_prep
 from networks.simple_net import build_simple_cnn14
 from networks.double_net import build_double_cnn14
 from networks.triple_net import build_triple_cnn14
 
+def randomize_file_list(file_list):
+    tmp = list(file_list) #copy list object
+    shuffle(tmp)
+    return tmp
 
-env = 'test'
+env = 'mock'
 network = 'simple'
 
 seg_ratio = 0.75
@@ -51,6 +56,15 @@ elif(env == 'prod'):
     train_class_path = "C:\\CT\\Train\\Class"
     val_vol_path = "C:\\CT\\Val\\Volumes"
     val_class_path = "C:\\CT\\Val\\Class"
+elif(env == 'mock'):
+    vol_src_path = "C:\\CT\\mocks\\volumes"
+    seg_src_path = "C:\\CT\\mocks\\segmentations"
+    vol_dest_path = "C:\\CT\\mocks\\Train\\volumes"
+    seg_dest_path = "C:\\CT\\mocks\\Train\\segmentations"
+    train_vol_path = "C:\\CT\\mocks\\Train\\volumes"
+    train_class_path = "C:\\CT\\mocks\\Train\\segmentations"
+    # val_vol_path = "C:\\CT\\mocks\\Val\\Volumes"
+    # val_class_path = "C:\\CT\\mocks\\Val\\Class"
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 # data_prep.prepare_val_train_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, validation_files_ind)
@@ -170,7 +184,7 @@ with tf.Session() as sess:
 
     # Keep training until reach max iterations
     while step < training_iters:
-        for vol_f in train_vol_list:
+        for vol_f in randomize_file_list(train_vol_list):
             print('training on', vol_f)
             class_f = data_prep.ret_class_file(vol_f, train_class_list)
             x_data = np.load(train_vol_path + "\\" + vol_f)
