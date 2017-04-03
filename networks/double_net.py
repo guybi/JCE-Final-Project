@@ -13,7 +13,7 @@ def build_double_cnn14(x, weights, biases):
 
     # first convolution layer parameters
     stride_1 = [1,1,1,1]
-    padding_1 = 'VALID'
+    padding_1 = 'SAME'
 
     # first convolution layer
     conv1 = conv.conv2d(x=input, W=weights['wc1'], b=biases['bc1'], strides=stride_1, padding=padding_1, name='conv1')
@@ -24,7 +24,7 @@ def build_double_cnn14(x, weights, biases):
     conv1 = pool.maxpool2d(conv1, k=2, name='maxpool1')
 
     stride_2 = [1, 1, 1, 1]
-    padding_2 = 'VALID'
+    padding_2 = 'SAME'
 
     # second convolution layer
     conv2 = conv.conv2d(x=conv1, W=weights['wc2'], b=biases['bc2'], strides=stride_2, padding=padding_2, name='conv2')
