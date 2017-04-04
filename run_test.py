@@ -161,7 +161,7 @@ with tf.name_scope('accuracy'):
 tf.summary.scalar("accuracy", accuracy)
 
 merged_summary = tf.summary.merge_all()
-saver = tf.train.Saver()
+# saver = tf.train.Saver()
 
 # Initializing the variables
 init = tf.global_variables_initializer()
@@ -231,12 +231,10 @@ with tf.Session() as sess:
                     #     min_after_dequeue=1000)
 
                     batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
-                    # tf.summary.tensor_summary("batch_x", batch_x)
-                    # tf.summary.tensor_summary("batch_y", batch_y)
-                    tf.summary.image("batch_x", batch_x_eval)
-                    tf.summary.image("batch_y", batch_y_eval)
+
                     # Run training
                     sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
+                    tf.summary.image('ex_output', batch_y_eval)
                     if step % display_step == 0:
                         # Calculate batch loss and accuracy
                         # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval,
@@ -245,15 +243,15 @@ with tf.Session() as sess:
                         print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
                               "{:.6f}".format(loss/batch_size) + ", Training Accuracy = " + \
                               "{:.5f}".format(acc))
-                        s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
-                        writer.add_summary(s, step)
 
                         # checkpoint visualization
-                        saver.save(sess, "log/model.ckpt")
+                        # saver.save(sess, "log/model.ckpt")
 
                         # break condition
                         if epochs > min_epochs and acc > 0.95:
                             break
+                    s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
+                    writer.add_summary(s, step)
                     step += 1
                     epochs += 1
 
