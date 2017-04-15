@@ -286,9 +286,9 @@ def norm_data(vol_src_path, seg_src_path):
 
     for f in val_vol_list:
         print("normalizing data file: " + f)
-        vol = np.load(vol_src_path + "\\" + f)  # load volume data
+        vol = np.load(vol_src_path + "/" + f)  # load volume data
         class_f = ret_class_file(f, class_list)  # get class file name
-        cat = np.load(seg_src_path + "\\" + class_f)  # load class data
+        cat = np.load(seg_src_path + "/" + class_f)  # load class data
 
         # get indexes of each type of patch
         liver_ind = np.where(cat == liver)
@@ -346,8 +346,7 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
             return;
         else:
             print('Shifted data directory is empty. Prepare data...')
-            prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio,
-                                                 klr)
+            prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
             print('Normalize data...')
             norm_data(vol_dest_path, seg_dest_path)
     else:

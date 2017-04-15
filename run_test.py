@@ -13,7 +13,7 @@ def randomize_file_list(file_list):
     shuffle(tmp)
     return tmp
 
-env = 'test'
+env = 'prod'
 network = 'simple'
 
 seg_ratio = 0.75
@@ -39,23 +39,24 @@ batch_x = tf.placeholder(tf.float32, [None, None, None, None], name='batch_x')
 batch_y = tf.placeholder(tf.float32, [None, 3], name='batch_y')
 
 if(env == 'test'):
-    vol_src_path = "C:\\CT\\Test\\Volumes"
-    seg_src_path = "C:\\CT\\Test\\Segmentations"
-    vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
-    seg_dest_path = "C:\\CT\\Test\\Train\\Class"
-    train_vol_path = "C:\\CT\\Test\\Train\\Volumes"
-    train_class_path = "C:\\CT\\Test\\Train\\Class"
-    val_vol_path = "C:\\CT\\Test\\Val\\Volumes"
-    val_class_path = "C:\\CT\\Test\\Val\\Class"
+    vol_src_path = "/home/guy/project/CT/Test/Volumes"
+    seg_src_path = "/home/guy/project/CT/Test/Segmentations"
+    vol_dest_path = "/home/guy/project/CT/Test/Train/Volumes"
+    seg_dest_path = "/home/guy/project/CT/Test/Train/Class"
+    train_vol_path = "/home/guy/project/CT/Test/Train/Volumes"
+    train_class_path = "/home/guy/project/CT/Test/Train/Class"
+    val_vol_path = "/home/guy/project/CT/Test/Val/Volumes"
+    val_class_path = "/home/guy/project/CT/Test/Val/Class"
+
 elif(env == 'prod'):
-    vol_src_path = "C:\\CT\\Volumes"
-    seg_src_path = "C:\\CT\\Segmentations"
-    vol_dest_path = "C:\\CT\\Train\\Volumes"
-    seg_dest_path = "C:\\CT\\Train\\Class"
-    train_vol_path = "C:\\CT\\Train\\Volumes"
-    train_class_path = "C:\\CT\\Train\\Class"
-    val_vol_path = "C:\\CT\\Val\\Volumes"
-    val_class_path = "C:\\CT\\Val\\Class"
+    vol_src_path = "/home/guy/project/CT/Volumes"
+    seg_src_path = "/home/guy/project/CT/Segmentations"
+    vol_dest_path = "/home/guy/project/CT/Train/Volumes"
+    seg_dest_path = "/home/guy/project/CT/Train/Class"
+    train_vol_path = "/home/guy/project/CT/Train/Volumes"
+    train_class_path = "/home/guy/project/CT/Train/Class"
+    val_vol_path = "/home/guy/project/CT/Val/Volumes"
+    val_class_path = "/home/guy/project/CT/Val/Class"
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 # data_prep.prepare_val_train_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, validation_files_ind)
@@ -131,6 +132,11 @@ if network == 'triple':
         'out': tf.Variable(tf.random_normal([n_classes]), name="bout")
     }
 
+
+
+# Add ops to save and restore all the variables.
+saver = tf.train.Saver()
+
 if network == 'simple':
     pred = build_simple_cnn14(x, weights, biases)
 if network == 'double':
@@ -166,22 +172,17 @@ merged_summary = tf.summary.merge_all()
 # Initializing the variables
 init = tf.global_variables_initializer()
 
-print('start tensorflow session...')
-
-with tf.Session() as sess:
-    sess.run(init)
+########################################################################################################################
+def test_env_function():
     step = 1
-
     writer = tf.summary.FileWriter("log", sess.graph)
-
-    # Keep training until reach max iterations
     while step < training_iters:
         min_epochs = 100
         for vol_f in randomize_file_list(train_vol_list):
             print('training on', vol_f)
             class_f = data_prep.ret_class_file(vol_f, train_class_list)
-            x_data = np.load(train_vol_path + "\\" + vol_f)
-            y_data = np.load(train_class_path + "\\" + class_f)
+            x_data = np.load(train_vol_path + "/" + vol_f)
+            y_data = np.load(train_class_path + "/" + class_f)
             x_data, y_data = data_prep.norm_data_rand(x_data, y_data)
 
             # batch_x, batch_y = tf.train.batch([x_data, y_data],
@@ -241,7 +242,7 @@ with tf.Session() as sess:
                         loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval, y: batch_y_eval})
                         # print(cp)
                         print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
-                              "{:.6f}".format(loss/batch_size) + ", Training Accuracy = " + \
+                              "{:.6f}".format(loss / batch_size) + ", Training Accuracy = " + \
                               "{:.5f}".format(acc))
 
                         # checkpoint visualization
@@ -261,6 +262,30 @@ with tf.Session() as sess:
                     # When done, ask the threads to stop.
                     # coord.request_stop()
                     pass
+
+
+########################################################################################################################
+
+print('start tensorflow session...')
+
+with tf.Session() as sess:
+    sess.run(init)
+
+    # Save the variables to disk.
+    save_path = saver.save(sess, "model/model.ckpt")
+    print("Model saved in file: %s" % save_path)
+
+    if env == 'prod' :
+        # Restore variables from disk.
+        saver.restore(sess, "model/model.ckpt")
+        print("Model restored.")
+
+    if env == 'test' :
+        test_env_function()
+
+
+    # Keep training until reach max iterations
+
 
 
 
