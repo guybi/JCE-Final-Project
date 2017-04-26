@@ -13,13 +13,14 @@ def randomize_file_list(file_list):
     shuffle(tmp)
     return tmp
 
-env = 'prod'
+env = 'test'
 network = 'simple'
+save_to_disk = 'false'
 
 seg_ratio = 0.75
 klr = 3  # in percentage
 # learning_rate = 0.0001
-learning_rate = 0.00000001
+learning_rate = 0.00001
 momentum = 0.9
 # momentum = 0.2
 batch_size = 1024
@@ -31,6 +32,7 @@ n_classes = 3
 
 x = tf.placeholder(tf.float32, [None, None, None, None], name='x')
 y = tf.placeholder(tf.float32, [None, 3], name='y')
+
 
 # x_data = tf.placeholder(tf.float32, [None, None, None, None], name='x_data')
 # y_data = tf.placeholder(tf.float32, [None, None], name='y_data')
@@ -146,17 +148,13 @@ if network == 'triple':
 
 # Define loss and optimizer
 with tf.name_scope('cost'):
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y))
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=pred, labels=y, name=None))
 tf.summary.scalar("cost", cost)
 
 with tf.name_scope('train'):
     # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
     #                                               name='gradient_descent').minimize(cost)
-    optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-                                           momentum=momentum,
-                                           use_nesterov=True,
-                                           use_locking=True,
-                                           name='momentum').minimize(cost)
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 
 # Evaluate model
 with tf.name_scope('accuracy'):
@@ -184,12 +182,6 @@ def test_env_function():
             x_data = np.load(train_vol_path + "/" + vol_f)
             y_data = np.load(train_class_path + "/" + class_f)
             x_data, y_data = data_prep.norm_data_rand(x_data, y_data)
-
-            # batch_x, batch_y = tf.train.batch([x_data, y_data],
-            #                                   batch_size=[batch_size],
-            #                                   num_threads=4,
-            #                                   enqueue_many=True,
-            #                                   capacity=50000)
 
             batch_x = tf.train.batch([x_data],
                                      batch_size=[batch_size],
@@ -271,24 +263,18 @@ print('start tensorflow session...')
 with tf.Session() as sess:
     sess.run(init)
 
-    # Save the variables to disk.
-    save_path = saver.save(sess, "model/model.ckpt")
-    print("Model saved in file: %s" % save_path)
+    if save_to_disk == 'true':
+        # Save the variables to disk.
+        save_path = saver.save(sess, "model/model.ckpt")
+        print("Model saved in file: %s" % save_path)
+
+    if env == 'test' :
+        test_env_function()
 
     if env == 'prod' :
         # Restore variables from disk.
         saver.restore(sess, "model/model.ckpt")
         print("Model restored.")
-
-    if env == 'test' :
-        test_env_function()
-
-
-    # Keep training until reach max iterations
-
-
-
-
 
 
     print("Optimization Finished!")
