@@ -35,13 +35,13 @@ def build_triple_cnn14(x, weights, biases):
     variable_summaries(weights['wc2'], "wc2")
 
     # max pooling (down-sampling)
-    # conv2 = pool.maxpool2d(conv2, k=2)
+    # conv2 = pool.maxpool2d(conv2, k=2, name='maxpool2')
 
     # RelU on conv2
     # conv2 = tf.nn.relu(conv2)
 
     stride_3 = [1, 1, 1, 1]
-    padding_3 = 'SAME'
+    padding_3 = 'VALID'
 
     # third convolution layer
     conv3 = conv.conv2d(x=conv2, W=weights['wc3'], b=biases['bc3'], strides=stride_3, padding=padding_3, name='conv3')
@@ -49,7 +49,7 @@ def build_triple_cnn14(x, weights, biases):
     variable_summaries(weights['wc3'], "wc3")
 
     # max pooling (down-sampling)
-    conv3 = pool.maxpool2d(conv3, k=2, name='maxpool2')
+    conv3 = pool.maxpool2d(conv3, k=2, name='maxpool3')
 
     # ReLU on conv3
     # conv3 = tf.nn.relu(conv3)

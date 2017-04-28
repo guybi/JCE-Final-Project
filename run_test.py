@@ -7,6 +7,7 @@ from helpers import data_prep
 from networks.simple_net import build_simple_cnn14
 from networks.double_net import build_double_cnn14
 from networks.triple_net import build_triple_cnn14
+import matplotlib.pyplot as plt
 
 def randomize_file_list(file_list):
     tmp = list(file_list) #copy list object
@@ -14,10 +15,10 @@ def randomize_file_list(file_list):
     return tmp
 
 env = 'test'
-network = 'simple'
+network = 'triple'
 
-seg_ratio = 0.75
 klr = 3  # in percentage
+seg_ratio = 0.75
 # learning_rate = 0.0001
 learning_rate = 0.00000001
 momentum = 0.9
@@ -69,66 +70,66 @@ train_class_list = os.listdir(train_class_path)
 if network == 'simple':
     weights = {
         # 5x5 conv, 1 input, 32 outputs
-        'wc1': tf.Variable(tf.random_normal([5, 5, 1, 32]), name="wc1"),
+        'wc1': tf.Variable(tf.truncated_normal([5, 5, 1, 32], stddev=0.01), name="wc1"),
         # fully connected, 32 inputs, 512 outputs
-        'wd1': tf.Variable(tf.random_normal([32, 256]), name="wd1"),
+        'wd1': tf.Variable(tf.truncated_normal([32, 256], stddev=0.01), name="wd1"),
         # 256 inputs, 3 outputs (class prediction)
-        'out': tf.Variable(tf.random_normal([256, n_classes]), name="wout")
+        'out': tf.Variable(tf.truncated_normal([256, n_classes], stddev=0.01), name="wout")
     }
 
     biases = {
-        'bc1': tf.Variable(tf.random_normal([32]), name="bc1"),
-        'bd1': tf.Variable(tf.random_normal([256]), name="bd1"),
-        'out': tf.Variable(tf.random_normal([n_classes]), name="bout")
+        'bc1': tf.Variable(tf.truncated_normal([32], stddev=0.01), name="bc1"),
+        'bd1': tf.Variable(tf.truncated_normal([256], stddev=0.01), name="bd1"),
+        'out': tf.Variable(tf.truncated_normal([n_classes], stddev=0.01), name="bout")
     }
 
 # double net weight and biases
 if network == 'double':
     weights = {
         # 5x5 conv, 1 input, 64 outputs
-        'wc1': tf.Variable(tf.random_normal([5, 5, 1, 64]), name="wc1"),
+        'wc1': tf.Variable(tf.truncated_normal([5, 5, 1, 64], stddev=0.01), name="wc1"),
         # 5x5 conv, 64 inputs, 64 outputs
-        'wc2': tf.Variable(tf.random_normal([3, 3, 64, 64]), name="wc2"),
+        'wc2': tf.Variable(tf.truncated_normal([3, 3, 64, 64], stddev=0.01), name="wc2"),
         # fully connected, 64 inputs, 256 outputs
-        'wd1': tf.Variable(tf.random_normal([64, 256]), name="wd1"),
+        'wd1': tf.Variable(tf.truncated_normal([64, 256], stddev=0.01), name="wd1"),
         # fully connected, 256 inputs, 256 outputs
-        'wd2': tf.Variable(tf.random_normal([256, 256]), name="wd2"),
+        'wd2': tf.Variable(tf.truncated_normal([256, 256], stddev=0.01), name="wd2"),
         # 256 inputs, 3 outputs (class prediction)
-        'out': tf.Variable(tf.random_normal([256, n_classes]), name="wout")
+        'out': tf.Variable(tf.truncated_normal([256, n_classes], stddev=0.01), name="wout")
     }
 
     biases = {
-        'bc1': tf.Variable(tf.random_normal([64]), name="bc1"),
-        'bc2': tf.Variable(tf.random_normal([64]), name="bc2"),
-        'bd1': tf.Variable(tf.random_normal([256]), name="bd1"),
-        'bd2': tf.Variable(tf.random_normal([256]), name="bd2"),
-        'out': tf.Variable(tf.random_normal([n_classes]), name="bout")
+        'bc1': tf.Variable(tf.truncated_normal([64], stddev=0.01), name="bc1"),
+        'bc2': tf.Variable(tf.truncated_normal([64], stddev=0.01), name="bc2"),
+        'bd1': tf.Variable(tf.truncated_normal([256], stddev=0.01), name="bd1"),
+        'bd2': tf.Variable(tf.truncated_normal([256], stddev=0.01), name="bd2"),
+        'out': tf.Variable(tf.truncated_normal([n_classes], stddev=0.01), name="bout")
     }
 
 # triple net weight and biases
 if network == 'triple':
     weights = {
         # 5x5 conv, 1 input, 64 outputs
-        'wc1': tf.Variable(tf.random_normal([5, 5, 1, 64]), name="wc1"),
+        'wc1': tf.Variable(tf.truncated_normal([5, 5, 1, 64], stddev=0.5), name="wc1"),
         # 5x5 conv, 64 inputs, 32 outputs
-        'wc2': tf.Variable(tf.random_normal([3, 3, 64, 32]), name="wc2"),
+        'wc2': tf.Variable(tf.truncated_normal([3, 3, 64, 32], stddev=0.5), name="wc2"),
         # 5x5 conv, 32 inputs, 32 outputs
-        'wc3': tf.Variable(tf.random_normal([3, 3, 32, 32]), name="wc3"),
+        'wc3': tf.Variable(tf.truncated_normal([3, 3, 32, 32], stddev=0.5), name="wc3"),
         # fully connected, 32 inputs, 512 outputs
-        'wd1': tf.Variable(tf.random_normal([32, 512]), name="wd1"),
+        'wd1': tf.Variable(tf.truncated_normal([32, 512], stddev=0.5), name="wd1"),
         # fully connected, 512 inputs, 512 outputs
-        'wd2': tf.Variable(tf.random_normal([512, 512]), name="wd2"),
+        'wd2': tf.Variable(tf.truncated_normal([512, 512], stddev=0.5), name="wd2"),
         # 512 inputs, 3 outputs (class prediction)
-        'out': tf.Variable(tf.random_normal([512, n_classes]), name="wout")
+        'out': tf.Variable(tf.truncated_normal([512, n_classes], stddev=0.5), name="wout")
     }
 
     biases = {
-        'bc1': tf.Variable(tf.random_normal([64]), name="bc1"),
-        'bc2': tf.Variable(tf.random_normal([32]), name="bc2"),
-        'bc3': tf.Variable(tf.random_normal([32]), name="bc3"),
-        'bd1': tf.Variable(tf.random_normal([512]), name="bd1"),
-        'bd2': tf.Variable(tf.random_normal([512]), name="bd2"),
-        'out': tf.Variable(tf.random_normal([n_classes]), name="bout")
+        'bc1': tf.Variable(tf.truncated_normal([64], stddev=0.5), name="bc1"),
+        'bc2': tf.Variable(tf.truncated_normal([32], stddev=0.5), name="bc2"),
+        'bc3': tf.Variable(tf.truncated_normal([32], stddev=0.5), name="bc3"),
+        'bd1': tf.Variable(tf.truncated_normal([512], stddev=0.5), name="bd1"),
+        'bd2': tf.Variable(tf.truncated_normal([512], stddev=0.5), name="bd2"),
+        'out': tf.Variable(tf.truncated_normal([n_classes], stddev=0.5), name="bout")
     }
 
 if network == 'simple':
@@ -182,7 +183,11 @@ with tf.Session() as sess:
             class_f = data_prep.ret_class_file(vol_f, train_class_list)
             x_data = np.load(train_vol_path + "\\" + vol_f)
             y_data = np.load(train_class_path + "\\" + class_f)
+
             x_data, y_data = data_prep.norm_data_rand(x_data, y_data)
+
+            tf.summary.image('ex_input', x_data)
+            tf.summary.image('ex_output', y_data)
 
             # batch_x, batch_y = tf.train.batch([x_data, y_data],
             #                                   batch_size=[batch_size],
@@ -214,11 +219,11 @@ with tf.Session() as sess:
 
             if network == 'triple':
                 batch_y = tf.train.batch([y_data],
-                                         batch_size=[batch_size * 4 * 3],
+                                         batch_size=[batch_size * 3],
                                          num_threads=1,
                                          enqueue_many=True,
                                          capacity=50000)
-                batch_y = tf.reshape(batch_y, shape=(4096, 3))
+                batch_y = tf.reshape(batch_y, shape=(1024, 3))
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
@@ -234,7 +239,7 @@ with tf.Session() as sess:
 
                     # Run training
                     sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
-                    tf.summary.image('ex_output', batch_y_eval)
+                    # tf.summary.image('ex_output', batch_y_eval)
                     if step % display_step == 0:
                         # Calculate batch loss and accuracy
                         # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval,

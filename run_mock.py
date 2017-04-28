@@ -7,6 +7,7 @@ from helpers import data_prep
 from networks.simple_net import build_simple_cnn14
 from networks.double_net import build_double_cnn14
 from networks.triple_net import build_triple_cnn14
+import matplotlib.pyplot as plt
 
 # def randomize_file_list(file_list):
 #     tmp = list(file_list) #copy list object
@@ -14,7 +15,7 @@ from networks.triple_net import build_triple_cnn14
 #     return tmp
 
 env = 'mock'
-network = 'double'
+network = 'simple'
 
 learning_rate = 0.0001
 # learning_rate = 0.0000001
@@ -154,6 +155,8 @@ with tf.name_scope('accuracy'):
         accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 tf.summary.scalar("accuracy", accuracy)
 
+merged_summary = tf.summary.merge_all()
+
 # Initializing the variables
 init = tf.global_variables_initializer()
 
@@ -163,6 +166,8 @@ with tf.Session() as sess:
     sess.run(init)
     step = 1
 
+    writer = tf.summary.FileWriter("log", sess.graph)
+
     # Keep training until reach max iterations
     while step < training_iters:
         for vol_f in train_vol_list:
@@ -171,18 +176,23 @@ with tf.Session() as sess:
             x_data = np.load(train_vol_path + "\\" + vol_f)
             y_data = np.load(train_class_path + "\\" + class_f)
 
+            # plt.imshow(x_data, cmap='gray')
+            # plt.show()
+            # plt.imshow(y_data, cmap='gray')
+            # plt.show()
+
             y_data = np.reshape(y_data, (196,1))
 
             sess.run(optimizer, feed_dict={x: x_data, y: y_data})
             # if step % display_step == 0:
             # Calculate batch loss and accuracy
-            # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval,
             loss, acc = sess.run([cost, accuracy], feed_dict={x: x_data, y: y_data})
-            # print(cp)
             print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
                   "{:.6f}".format(loss) + ", Training Accuracy = " + \
                   "{:.5f}".format(acc))
 
+            # s = sess.run(merged_summary, feed_dict={x: x_data, y: y_data})
+            # writer.add_summary(s, step)
             step += 1
 
     print("Optimization Finished!")
