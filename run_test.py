@@ -1,4 +1,3 @@
-
 import os
 import tensorflow as tf
 import numpy as np
@@ -16,10 +15,7 @@ def randomize_file_list(file_list):
 
 env = 'test'
 network = 'triple'
-network = 'simple'
-save_to_disk = 'false'
 
-seg_ratio = 0.75
 klr = 3  # in percentage
 seg_ratio = 0.75
 # learning_rate = 0.0001
@@ -32,6 +28,7 @@ training_iters = 5
 display_step = 5
 validation_files_ind = [18,19]
 n_classes = 3
+user = 'guy'
 
 x = tf.placeholder(tf.float32, [None, None, None, None], name='x')
 y = tf.placeholder(tf.float32, [None, 3], name='y')
@@ -42,24 +39,46 @@ y = tf.placeholder(tf.float32, [None, 3], name='y')
 batch_x = tf.placeholder(tf.float32, [None, None, None, None], name='batch_x')
 batch_y = tf.placeholder(tf.float32, [None, 3], name='batch_y')
 
-if(env == 'test'):
-    vol_src_path = "C:\\CT\\Test\\Volumes"
-    seg_src_path = "C:\\CT\\Test\\Segmentations"
-    vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
-    seg_dest_path = "C:\\CT\\Test\\Train\\Class"
-    train_vol_path = "C:\\CT\\Test\\Train\\Volumes"
-    train_class_path = "C:\\CT\\Test\\Train\\Class"
-    val_vol_path = "C:\\CT\\Test\\Val\\Volumes"
-    val_class_path = "C:\\CT\\Test\\Val\\Class"
-elif(env == 'prod'):
-    vol_src_path = "C:\\CT\\Volumes"
-    seg_src_path = "C:\\CT\\Segmentations"
-    vol_dest_path = "C:\\CT\\Train\\Volumes"
-    seg_dest_path = "C:\\CT\\Train\\Class"
-    train_vol_path = "C:\\CT\\Train\\Volumes"
-    train_class_path = "C:\\CT\\Train\\Class"
-    val_vol_path = "C:\\CT\\Val\\Volumes"
-    val_class_path = "C:\\CT\\Val\\Class"
+if (user == 'tal'):
+    if(env == 'test'):
+        vol_src_path = "C:\\CT\\Test\\Volumes"
+        seg_src_path = "C:\\CT\\Test\\Segmentations"
+        vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
+        seg_dest_path = "C:\\CT\\Test\\Train\\Class"
+        train_vol_path = "C:\\CT\\Test\\Train\\Volumes"
+        train_class_path = "C:\\CT\\Test\\Train\\Class"
+        val_vol_path = "C:\\CT\\Test\\Val\\Volumes"
+        val_class_path = "C:\\CT\\Test\\Val\\Class"
+    elif(env == 'prod'):
+        vol_src_path = "C:\\CT\\Volumes"
+        seg_src_path = "C:\\CT\\Segmentations"
+        vol_dest_path = "C:\\CT\\Train\\Volumes"
+        seg_dest_path = "C:\\CT\\Train\\Class"
+        train_vol_path = "C:\\CT\\Train\\Volumes"
+        train_class_path = "C:\\CT\\Train\\Class"
+        val_vol_path = "C:\\CT\\Val\\Volumes"
+        val_class_path = "C:\\CT\\Val\\Class"
+
+if (user == 'guy'):
+    if (env == 'test'):
+        vol_src_path = "/home/guy/project/CT/Test/Volumes"
+        seg_src_path = "/home/guy/project/CT/Test/Segmentations"
+        vol_dest_path = "/home/guy/project/CT/Test/Train/Volumes"
+        seg_dest_path = "/home/guy/project/CT/Test/Train/Class"
+        train_vol_path = "/home/guy/project/CT/Test/Train/Volumes"
+        train_class_path = "/home/guy/project/CT/Test/Train/Class"
+        val_vol_path = "/home/guy/project/CT/Test/Val/Volumes"
+        val_class_path = "/home/guy/project/CT/Test/Val/Class"
+
+    elif (env == 'prod'):
+        vol_src_path = "/home/guy/project/CT/Volumes"
+        seg_src_path = "/home/guy/project/CT/Segmentations"
+        vol_dest_path = "/home/guy/project/CT/Train/Volumes"
+        seg_dest_path = "/home/guy/project/CT/Train/Class"
+        train_vol_path = "/home/guy/project/CT/Train/Volumes"
+        train_class_path = "/home/guy/project/CT/Train/Class"
+        val_vol_path = "/home/guy/project/CT/Val/Volumes"
+        val_class_path = "/home/guy/project/CT/Val/Class"
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 # data_prep.prepare_val_train_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, validation_files_ind)
@@ -170,9 +189,12 @@ merged_summary = tf.summary.merge_all()
 # Initializing the variables
 init = tf.global_variables_initializer()
 
-########################################################################################################################
-def test_env_function():
+print('start tensorflow session...')
+
+with tf.Session() as sess:
+    sess.run(init)
     step = 1
+
     writer = tf.summary.FileWriter("log", sess.graph)
 
     # Keep training until reach max iterations
@@ -268,7 +290,6 @@ def test_env_function():
                     pass
 
 
-########################################################################################################################
 
 
 
