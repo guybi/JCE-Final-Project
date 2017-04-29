@@ -11,10 +11,10 @@ import tensorflow as tf
 
 # params
 
-vol_src_path = "/home/guy/project/Project_new/DATA_SET/Test/Volumes"
-seg_src_path = "/home/guy/project/Project_new/DATA_SET/Test/Segmentations"
-train_vol_path = vol_dest_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Volumes"
-train_segmentations_path = seg_dest_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Segmentations"
+vol_src_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Volumes"
+seg_src_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Segmentations"
+train_vol_path = vol_dest_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Volumes"
+train_segmentations_path = seg_dest_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Segmentations"
 
 klr = 3  # in percentage
 dxy = 4

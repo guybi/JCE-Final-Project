@@ -82,11 +82,11 @@ def prepare_val_train_data(vol_src_path, seg_src_path, val_vol_dest_path, val_se
 ###############################################################################
 
 # to be run after prep_data
-vol_src_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Volumes"
-seg_src_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Segmentations"
+vol_src_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Volumes"
+seg_src_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Segmentations"
 
-vol_dest_path = "/home/guy/project/Project_new/DATA_SET/Test/Val/Volumes"
-seg_dest_path = "/home/guy/project/Project_new/DATA_SET/Test/Val/Class"
+vol_dest_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Val/Volumes"
+seg_dest_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Val/Class"
 
 
 validation_files_ind = [1, 19]

@@ -259,43 +259,43 @@ def train_cnn(train_vol_path, train_class_path, vol_val_path, val_class_path, ne
         #         val_err += r * err
         #         val_acc += r * acc
         #         val_batches += r
-
-            # get kidney validation patches
-            # d = len(vol_val) / 3
-            # kidneys = vol_val[0:d]
-            # kidneys_class = class_val[0:d]
-            # # get liver validation patches
-            # livers = vol_val[d:2 * d]
-            # livers_class = class_val[d:2 * d]
-            # # get nothing validation patches
-            # nothings = vol_val[2 * d:3 * d]
-            # nothings_class = class_val[2 * d:3 * d]
-
-            # for batch in iterate_minibatches(kidneys, kidneys_class, val_batch_size, shuffle=False):
-            #     inputs, targets = batch
-            #     r = len(inputs) / float(val_batch_size)
-            #     err, acc = val_fn(inputs, targets)
-            #     val_k_acc += r * acc
-            #     val_k_batches += r
-            #
-            # for batch in iterate_minibatches(livers, livers_class, val_batch_size, shuffle=False):
-            #     inputs, targets = batch
-            #     r = len(inputs) / float(val_batch_size)
-            #     err, acc = val_fn(inputs, targets)
-            #     val_l_acc += r * acc
-            #     val_l_batches += r
-            #
-            # for batch in iterate_minibatches(nothings, nothings_class, val_batch_size, shuffle=False):
-            #     inputs, targets = batch
-            #     r = len(inputs) / float(val_batch_size)
-            #     err, acc = val_fn(inputs, targets)
-            #     val_n_acc += r * acc
-            #     val_n_batches += r
-            #
-            #     # free numpy array memory
-            # del vol_val
-            # del class_val
-
+        #
+        #     # get kidney validation patches
+        #     d = len(vol_val) / 3
+        #     kidneys = vol_val[0:d]
+        #     kidneys_class = class_val[0:d]
+        #     # get liver validation patches
+        #     livers = vol_val[d:2 * d]
+        #     livers_class = class_val[d:2 * d]
+        #     # get nothing validation patches
+        #     nothings = vol_val[2 * d:3 * d]
+        #     nothings_class = class_val[2 * d:3 * d]
+        #
+        #     for batch in iterate_minibatches(kidneys, kidneys_class, val_batch_size, shuffle=False):
+        #         inputs, targets = batch
+        #         r = len(inputs) / float(val_batch_size)
+        #         err, acc = val_fn(inputs, targets)
+        #         val_k_acc += r * acc
+        #         val_k_batches += r
+        #
+        #     for batch in iterate_minibatches(livers, livers_class, val_batch_size, shuffle=False):
+        #         inputs, targets = batch
+        #         r = len(inputs) / float(val_batch_size)
+        #         err, acc = val_fn(inputs, targets)
+        #         val_l_acc += r * acc
+        #         val_l_batches += r
+        #
+        #     for batch in iterate_minibatches(nothings, nothings_class, val_batch_size, shuffle=False):
+        #         inputs, targets = batch
+        #         r = len(inputs) / float(val_batch_size)
+        #         err, acc = val_fn(inputs, targets)
+        #         val_n_acc += r * acc
+        #         val_n_batches += r
+        #
+        #         # free numpy array memory
+        #     del vol_val
+        #     del class_val
+        #
         # deal with divison by zero
         # if (val_batches == 0):
         #     val_batches = 1
@@ -381,14 +381,14 @@ def train_cnn(train_vol_path, train_class_path, vol_val_path, val_class_path, ne
 ###############################################################################;
 
 # paths of training volumes and classification files
-vol_src_path = "/home/guy/project/Project_new/DATA_SET/Test/Volumes"
-seg_src_path = "/home/guy/project/Project_new/DATA_SET/Test/Segmentations"
-vol_dest_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Volumes"
-seg_dest_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Segmentations"
+vol_src_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Volumes"
+seg_src_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Segmentations"
+vol_dest_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Volumes"
+seg_dest_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Segmentations"
 
 
-train_vol_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Volumes"
-train_class_path = "/home/guy/project/Project_new/DATA_SET/Test/Train/Segmentations"
+train_vol_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Volumes"
+train_class_path = "/home/guy/project/research_tensor_Integration_lasagna/DATA_SET/Test/Train/Segmentations"
 
 # paths of validation volumes and classification files
 # val_vol_path = "Val\Volumes"
