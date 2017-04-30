@@ -14,15 +14,15 @@ def randomize_file_list(file_list):
     return tmp
 
 env = 'test'
-network = 'triple'
+network = 'simple'
 
 klr = 3  # in percentage
 seg_ratio = 0.75
 # learning_rate = 0.0001
-learning_rate = 0.00000001
+learning_rate = 0.00001
 momentum = 0.9
 # momentum = 0.2
-batch_size = 1024
+batch_size = 1000
 # training_iters = 200000
 training_iters = 5
 display_step = 5
@@ -31,13 +31,13 @@ n_classes = 3
 user = 'guy'
 
 x = tf.placeholder(tf.float32, [None, None, None, None], name='x')
-y = tf.placeholder(tf.float32, [None, 3], name='y')
+y = tf.placeholder(tf.float32, [None,3], name='y')
 
 # x_data = tf.placeholder(tf.float32, [None, None, None, None], name='x_data')
 # y_data = tf.placeholder(tf.float32, [None, None], name='y_data')
 
-batch_x = tf.placeholder(tf.float32, [None, None, None, None], name='batch_x')
-batch_y = tf.placeholder(tf.float32, [None, 3], name='batch_y')
+#batch_x = tf.placeholder(tf.float32, [None, None, None, None], name='batch_x')
+#batch_y = tf.placeholder(tf.float32, [None, 3], name='batch_y')
 
 if (user == 'tal'):
     if(env == 'test'):
@@ -92,9 +92,9 @@ train_class_list = os.listdir(train_class_path)
 if network == 'simple':
     weights = {
         # 5x5 conv, 1 input, 32 outputs
-        'wc1': tf.Variable(tf.truncated_normal([5, 5, 1, 32], stddev=0.01), name="wc1"),
+        'wc1': tf.Variable(tf.truncated_normal([ 5, 5,1 ,32], stddev=0.01), name="wc1"),
         # fully connected, 32 inputs, 512 outputs
-        'wd1': tf.Variable(tf.truncated_normal([32, 256], stddev=0.01), name="wd1"),
+        'wd1': tf.Variable(tf.truncated_normal([1568, 256], stddev=0.01), name="wd1"), #32
         # 256 inputs, 3 outputs (class prediction)
         'out': tf.Variable(tf.truncated_normal([256, n_classes], stddev=0.01), name="wout")
     }
@@ -172,8 +172,8 @@ with tf.name_scope('train'):
     optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                            momentum=momentum,
                                            use_nesterov=True,
-                                           use_locking=True,
-                                           name='momentum').minimize(cost)
+                                           use_locking=False, #GUY: Originally True
+                                           name='Momentum').minimize(cost)
 
 # Evaluate model
 with tf.name_scope('accuracy'):
@@ -203,33 +203,35 @@ with tf.Session() as sess:
         for vol_f in randomize_file_list(train_vol_list):
             print('training on', vol_f)
             class_f = data_prep.ret_class_file(vol_f, train_class_list)
-            x_data = np.load(train_vol_path + "\\" + vol_f)
-            y_data = np.load(train_class_path + "\\" + class_f)
+            x_data = np.load(train_vol_path + "/" + vol_f)
+            y_data = np.load(train_class_path + "/" + class_f)
 
-            x_data, y_data = data_prep.norm_data_rand(x_data, y_data)
+            x_data, label_data = data_prep.norm_data_rand(x_data, y_data)
+
+            #y_data= [[int(dim==y) for dim in range(3)]  for y in y_data]
+
+            n=np.size(label_data,0)
+            y_data= np.zeros([n,3])
+            y_data[range(n),label_data]=1
+
+            a=1
 
             tf.summary.image('ex_input', x_data)
             tf.summary.image('ex_output', y_data)
 
-            # batch_x, batch_y = tf.train.batch([x_data, y_data],
-            #                                   batch_size=[batch_size],
-            #                                   num_threads=4,
-            #                                   enqueue_many=True,
-            #                                   capacity=50000)
-
-            batch_x = tf.train.batch([x_data],
+            batch_x, batch_y = tf.train.batch([x_data, y_data],
                                      batch_size=[batch_size],
                                      num_threads=1,
                                      enqueue_many=True,
                                      capacity=50000)
 
-            if network == 'simple':
-                batch_y = tf.train.batch([y_data],
-                                         batch_size=[batch_size * 25 * 3],
-                                         num_threads=1,
-                                         enqueue_many=True,
-                                         capacity=50000)
-                batch_y = tf.reshape(batch_y, shape=(25600, 3))
+            # if network == 'simple':
+            #     batch_y = tf.train.batch([y_data],
+            #                              batch_size=[batch_size],
+            #                              num_threads=1,
+            #                              enqueue_many=True,
+            #                              capacity=50000)
+                #batch_y = tf.reshape(batch_y, shape=(25600, 3))  Error - need to be deleted
 
             if network == 'double':
                 batch_y = tf.train.batch([y_data],
@@ -249,7 +251,7 @@ with tf.Session() as sess:
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-            epochs = 1
+            epochs = 100
             while not coord.should_stop():
                 try:
                     # test_batch_x, test_batch_y = tf.train.shuffle_batch(
@@ -277,8 +279,8 @@ with tf.Session() as sess:
                         # break condition
                         if epochs > min_epochs and acc > 0.95:
                             break
-                    s = sess.run(merged_summary, feed_dict={x: batch_x_eval, y: batch_y_eval})
-                    writer.add_summary(s, step)
+                  #  s = sess.run(merged_summary, feed_dict={x: batch_x, y: batch_y}) GUY: Return
+                 #   writer.add_summary(s, step)
                     step += 1
                     epochs += 1
 
