@@ -19,13 +19,13 @@ network = 'simple'
 klr = 3  # in percentage
 seg_ratio = 0.75
 # learning_rate = 0.0001
-learning_rate = 0.00001
+learning_rate = 0.0001
 momentum = 0.9
 # momentum = 0.2
 batch_size = 1000
 # training_iters = 200000
 training_iters = 5
-display_step = 5
+display_step = 10
 validation_files_ind = [18,19]
 n_classes = 3
 user = 'guy'
@@ -81,28 +81,25 @@ if (user == 'guy'):
         val_class_path = "/home/guy/project/CT/Val/Class"
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
-# data_prep.prepare_val_train_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, validation_files_ind)
 
 train_vol_list = os.listdir(train_vol_path)
 train_class_list = os.listdir(train_class_path)
-# val_vol_path = os.listdir(val_vol_path)
-# val_class_list = os.listdir(val_class_path)
 
 # simple net weight and biases
 if network == 'simple':
     weights = {
         # 5x5 conv, 1 input, 32 outputs
-        'wc1': tf.Variable(tf.truncated_normal([ 5, 5,1 ,32], stddev=0.01), name="wc1"),
+        'wc1': tf.Variable(tf.truncated_normal([ 5, 5,1 ,32], stddev=0.1), name="wc1"),
         # fully connected, 32 inputs, 512 outputs
-        'wd1': tf.Variable(tf.truncated_normal([1568, 256], stddev=0.01), name="wd1"), #32
+        'wd1': tf.Variable(tf.truncated_normal([1568, 256], stddev=0.1), name="wd1"), #32
         # 256 inputs, 3 outputs (class prediction)
-        'out': tf.Variable(tf.truncated_normal([256, n_classes], stddev=0.01), name="wout")
+        'out': tf.Variable(tf.truncated_normal([256, n_classes], stddev=0.1), name="wout")
     }
 
     biases = {
-        'bc1': tf.Variable(tf.truncated_normal([32], stddev=0.01), name="bc1"),
-        'bd1': tf.Variable(tf.truncated_normal([256], stddev=0.01), name="bd1"),
-        'out': tf.Variable(tf.truncated_normal([n_classes], stddev=0.01), name="bout")
+        'bc1': tf.Variable(tf.truncated_normal([32], stddev=0.1), name="bc1"),
+        'bd1': tf.Variable(tf.truncated_normal([256], stddev=0.1), name="bd1"),
+        'out': tf.Variable(tf.truncated_normal([n_classes], stddev=0.1), name="bout")
     }
 
 # double net weight and biases
@@ -167,8 +164,7 @@ with tf.name_scope('cost'):
 tf.summary.scalar("cost", cost)
 
 with tf.name_scope('train'):
-    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
-    #                                               name='gradient_descent').minimize(cost)
+
     optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                            momentum=momentum,
                                            use_nesterov=True,
@@ -184,7 +180,6 @@ with tf.name_scope('accuracy'):
 tf.summary.scalar("accuracy", accuracy)
 
 merged_summary = tf.summary.merge_all()
-# saver = tf.train.Saver()
 
 # Initializing the variables
 init = tf.global_variables_initializer()
@@ -208,13 +203,9 @@ with tf.Session() as sess:
 
             x_data, label_data = data_prep.norm_data_rand(x_data, y_data)
 
-            #y_data= [[int(dim==y) for dim in range(3)]  for y in y_data]
-
             n=np.size(label_data,0)
             y_data= np.zeros([n,3])
             y_data[range(n),label_data]=1
-
-            a=1
 
             tf.summary.image('ex_input', x_data)
             tf.summary.image('ex_output', y_data)
@@ -225,62 +216,27 @@ with tf.Session() as sess:
                                      enqueue_many=True,
                                      capacity=50000)
 
-            # if network == 'simple':
-            #     batch_y = tf.train.batch([y_data],
-            #                              batch_size=[batch_size],
-            #                              num_threads=1,
-            #                              enqueue_many=True,
-            #                              capacity=50000)
-                #batch_y = tf.reshape(batch_y, shape=(25600, 3))  Error - need to be deleted
-
-            if network == 'double':
-                batch_y = tf.train.batch([y_data],
-                                         batch_size=[batch_size * 4 * 3],
-                                         num_threads=1,
-                                         enqueue_many=True,
-                                         capacity=50000)
-                batch_y = tf.reshape(batch_y, shape=(4096, 3))
-
-            if network == 'triple':
-                batch_y = tf.train.batch([y_data],
-                                         batch_size=[batch_size * 3],
-                                         num_threads=1,
-                                         enqueue_many=True,
-                                         capacity=50000)
-                batch_y = tf.reshape(batch_y, shape=(1024, 3))
-
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
             epochs = 100
             while not coord.should_stop():
                 try:
-                    # test_batch_x, test_batch_y = tf.train.shuffle_batch(
-                    #     [x_data, y_data], batch_size=128,
-                    #     capacity=2000,
-                    #     min_after_dequeue=1000)
-
                     batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
-
                     # Run training
                     sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
                     # tf.summary.image('ex_output', batch_y_eval)
                     if step % display_step == 0:
                         # Calculate batch loss and accuracy
-                        # loss, acc, cp = sess.run([cost, accuracy, correct_pred], feed_dict={x: batch_x_eval,
                         loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval, y: batch_y_eval})
                         # print(cp)
                         print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
                               "{:.6f}".format(loss/batch_size) + ", Training Accuracy = " + \
                               "{:.5f}".format(acc))
 
-                        # checkpoint visualization
-                        # saver.save(sess, "log/model.ckpt")
-
                         # break condition
                         if epochs > min_epochs and acc > 0.95:
                             break
-                  #  s = sess.run(merged_summary, feed_dict={x: batch_x, y: batch_y}) GUY: Return
-                 #   writer.add_summary(s, step)
+
                     step += 1
                     epochs += 1
 
@@ -290,11 +246,6 @@ with tf.Session() as sess:
                     # When done, ask the threads to stop.
                     # coord.request_stop()
                     pass
-
-
-
-
-
     print("Optimization Finished!")
 
     # print("Testing Accuracy:", \
