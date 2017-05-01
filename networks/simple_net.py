@@ -18,6 +18,8 @@ def build_simple_cnn14(x, weights, biases):
 
     # first convolution layer
     conv1 = conv.conv2d(x=input, W=weights['wc1'], b=biases['bc1'], name='conv1', strides= stride_1, padding= padding_1)
+    variable_summaries(weights['wc1'], "wc1")
+
 
     relConv1= tf.nn.relu(conv1)
 
@@ -65,4 +67,4 @@ def variable_summaries(var, name):
         tf.summary.scalar('stddev', stddev)
         tf.summary.scalar('max', tf.reduce_max(var))
         tf.summary.scalar('min', tf.reduce_min(var))
-        tf.summary.histogram(name, var)
+

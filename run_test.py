@@ -190,7 +190,7 @@ with tf.Session() as sess:
     sess.run(init)
     step = 1
 
-    writer = tf.summary.FileWriter("log", sess.graph)
+    writer = tf.summary.FileWriter("log_simple", sess.graph)
 
     # Keep training until reach max iterations
     while step < training_iters:
@@ -223,15 +223,17 @@ with tf.Session() as sess:
                 try:
                     batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
                     # Run training
-                    sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
+                    s = sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
                     # tf.summary.image('ex_output', batch_y_eval)
                     if step % display_step == 0:
                         # Calculate batch loss and accuracy
-                        loss, acc = sess.run([cost, accuracy], feed_dict={x: batch_x_eval, y: batch_y_eval})
+                        loss, acc, summary = sess.run([cost, accuracy, merged_summary], feed_dict={x: batch_x_eval, y: batch_y_eval})
                         # print(cp)
                         print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
                               "{:.6f}".format(loss/batch_size) + ", Training Accuracy = " + \
                               "{:.5f}".format(acc))
+
+                        writer.add_summary(summary, epochs )
 
                         # break condition
                         if epochs > min_epochs and acc > 0.95:
