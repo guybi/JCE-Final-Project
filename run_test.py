@@ -8,6 +8,7 @@ from networks.double_net import build_double_cnn14
 from networks.triple_net import build_triple_cnn14
 import matplotlib.pyplot as plt
 
+
 def randomize_file_list(file_list):
     tmp = list(file_list) #copy list object
     shuffle(tmp)
@@ -19,25 +20,20 @@ network = 'simple'
 klr = 3  # in percentage
 seg_ratio = 0.75
 # learning_rate = 0.0001
-learning_rate = 0.0001
+learning_rate = 0.00001
 momentum = 0.9
 # momentum = 0.2
 batch_size = 1000
 # training_iters = 200000
-training_iters = 5
+training_iters = 2
 display_step = 10
-validation_files_ind = [18,19]
+min_epochs = 100
+validation_files_ind = [1]
 n_classes = 3
-user = 'guy'
+user = 'tal'
 
 x = tf.placeholder(tf.float32, [None, None, None, None], name='x')
 y = tf.placeholder(tf.float32, [None,3], name='y')
-
-# x_data = tf.placeholder(tf.float32, [None, None, None, None], name='x_data')
-# y_data = tf.placeholder(tf.float32, [None, None], name='y_data')
-
-#batch_x = tf.placeholder(tf.float32, [None, None, None, None], name='batch_x')
-#batch_y = tf.placeholder(tf.float32, [None, 3], name='batch_y')
 
 if (user == 'tal'):
     if(env == 'test'):
@@ -81,15 +77,18 @@ if (user == 'guy'):
         val_class_path = "/home/guy/project/CT/Val/Class"
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+data_prep.prepare_val_train_data(vol_dest_path, seg_dest_path, val_vol_path, val_class_path, validation_files_ind)
 
 train_vol_list = os.listdir(train_vol_path)
 train_class_list = os.listdir(train_class_path)
+val_vol_list = os.listdir(val_vol_path)
+val_class_list = os.listdir(val_class_path)
 
 # simple net weight and biases
 if network == 'simple':
     weights = {
         # 5x5 conv, 1 input, 32 outputs
-        'wc1': tf.Variable(tf.truncated_normal([ 5, 5,1 ,32], stddev=0.1), name="wc1"),
+        'wc1': tf.Variable(tf.truncated_normal([ 5, 5, 1, 32], stddev=0.1), name="wc1"),
         # fully connected, 32 inputs, 512 outputs
         'wd1': tf.Variable(tf.truncated_normal([1568, 256], stddev=0.1), name="wd1"), #32
         # 256 inputs, 3 outputs (class prediction)
@@ -164,12 +163,13 @@ with tf.name_scope('cost'):
 tf.summary.scalar("cost", cost)
 
 with tf.name_scope('train'):
-
+    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
+    #                                               name='gradient_descent').minimize(cost)
     optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                            momentum=momentum,
                                            use_nesterov=True,
-                                           use_locking=False, #GUY: Originally True
-                                           name='Momentum').minimize(cost)
+                                           use_locking=True,
+                                           name='momentum').minimize(cost)
 
 # Evaluate model
 with tf.name_scope('accuracy'):
@@ -180,6 +180,7 @@ with tf.name_scope('accuracy'):
 tf.summary.scalar("accuracy", accuracy)
 
 merged_summary = tf.summary.merge_all()
+# saver = tf.train.Saver()
 
 # Initializing the variables
 init = tf.global_variables_initializer()
@@ -190,13 +191,15 @@ with tf.Session() as sess:
     sess.run(init)
     step = 1
 
-    writer = tf.summary.FileWriter("log_simple", sess.graph)
+    writer = tf.summary.FileWriter("log", sess.graph)
 
     # Keep training until reach max iterations
     while step < training_iters:
-        min_epochs = 100
+        # min_epochs = 100
         for vol_f in randomize_file_list(train_vol_list):
             print('training on', vol_f)
+
+            # load train data
             class_f = data_prep.ret_class_file(vol_f, train_class_list)
             x_data = np.load(train_vol_path + "/" + vol_f)
             y_data = np.load(train_class_path + "/" + class_f)
@@ -207,18 +210,21 @@ with tf.Session() as sess:
             y_data= np.zeros([n,3])
             y_data[range(n),label_data]=1
 
+            # limit to n patches
+            # x_data = x_data[0:196]
+            # y_data = y_data[0:196]
+
             tf.summary.image('ex_input', x_data)
-            tf.summary.image('ex_output', y_data)
 
             batch_x, batch_y = tf.train.batch([x_data, y_data],
                                      batch_size=[batch_size],
-                                     num_threads=1,
+                                     num_threads=4,
                                      enqueue_many=True,
-                                     capacity=50000)
+                                     capacity=32)
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-            epochs = 100
+            epochs = 1
             while not coord.should_stop():
                 try:
                     batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
@@ -244,14 +250,70 @@ with tf.Session() as sess:
 
                 except tf.errors.OutOfRangeError:
                     print('Done training -- epoch limit reached')
+                    coord.request_stop()
                 finally:
                     # When done, ask the threads to stop.
                     # coord.request_stop()
                     pass
-    print("Optimization Finished!")
+        # coord.join(threads)
 
-    # print("Testing Accuracy:", \
-    #     sess.run(accuracy, feed_dict={x: x_data,
-    #                                   y: y_data}))
+        # validation
+        for vol_val_f in val_vol_list:
+            # load validation data
+            class_val_f = data_prep.ret_class_file(vol_val_f, val_class_list)
+            x_val_data = np.load(val_vol_path + "/" + vol_val_f)
+            y_val_data_tmp = np.load(val_class_path + "/" + class_val_f)
+
+            # x_val_data, label_data = data_prep.norm_data_rand(x_val_data, y_val_data_tmp)
+
+            n_val = np.size(y_val_data_tmp, 0)
+            y_val_data = np.zeros([n_val, 3])
+            y_val_data[range(n_val), y_val_data_tmp] = 1
+
+            # limit to n patches
+            # x_val_data = x_val_data[0:196]
+            # y_val_data = y_val_data[0:196]
+
+            batch_x_val, batch_y_val = tf.train.batch([x_val_data, y_val_data],
+                                                      batch_size=[batch_size],
+                                                      num_threads=1,
+                                                      enqueue_many=True,
+                                                      capacity=32)
+
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+
+            epochs = 1
+            while not coord.should_stop():
+                try:
+                    batch_val_x_eval, batch_val_y_eval = sess.run([batch_x_val, batch_y_val])
+                    # Run training
+                    s_val = sess.run(optimizer, feed_dict={x: batch_val_x_eval, y: batch_val_y_eval})
+                    # tf.summary.image('ex_output', batch_y_eval)
+                    if step % display_step == 0:
+                        # Calculate batch loss and accuracy
+                        loss, acc = sess.run([cost, accuracy],
+                                             feed_dict={x: batch_val_x_eval, y: batch_val_y_eval})
+                        print("Iter " + str(step * batch_size) + ", Minibatch Validation Loss = " + \
+                              "{:.6f}".format(loss / batch_size) + ", Training Validation Accuracy = " + \
+                              "{:.5f}".format(acc))
+
+                        writer.add_summary(summary, epochs)
+
+                        # break condition
+                        if epochs > min_epochs and acc > 0.95:
+                            break
+
+                    step += 1
+                    epochs += 1
+
+                except tf.errors.OutOfRangeError:
+                    print('Done training -- epoch limit reached')
+                    coord.request_stop()
+                finally:
+                    # When done, ask the threads to stop.
+                    pass
+
+    print("Optimization Finished!")
 
     sess.close()

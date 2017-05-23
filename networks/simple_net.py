@@ -51,9 +51,6 @@ def build_simple_cnn14(x, weights, biases):
     variable_summaries(weights['out'], "weights")
     variable_summaries(biases['out'], "out")
 
-    output_image = tf.reshape(output, shape=(-1, 3, 1, 1))
-    tf.summary.image("output", output_image)
-
     return output
 
 
