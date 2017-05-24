@@ -47,8 +47,6 @@ with tf.name_scope('cost'):
 tf.summary.scalar("cost", cost)
 
 with tf.name_scope('train'):
-    # optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate,
-    #                                               name='gradient_descent').minimize(cost)
     optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
                                            momentum=momentum,
                                            use_nesterov=True,
@@ -91,9 +89,9 @@ with tf.Session() as sess:
 
             x_data, label_data = data_prep.norm_data_rand(x_data, y_data)
 
-            n=np.size(label_data,0)
-            y_data= np.zeros([n,3])
-            y_data[range(n),label_data]=1
+            n = np.size(label_data,0)
+            y_data = np.zeros([n,3])
+            y_data[range(n),label_data] = 1
 
             # limit to n patches
             # x_data = x_data[0:196]
@@ -113,18 +111,18 @@ with tf.Session() as sess:
             while not coord.should_stop():
                 try:
                     batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
+
                     # Run training
                     s = sess.run(optimizer, feed_dict={x: batch_x_eval, y: batch_y_eval})
-                    # tf.summary.image('ex_output', batch_y_eval)
+
                     if step % display_step == 0:
                         # Calculate batch loss and accuracy
                         loss, acc, summary = sess.run([cost, accuracy, merged_summary], feed_dict={x: batch_x_eval, y: batch_y_eval})
-                        # print(cp)
                         print("Iter " + str(step * batch_size) + ", Minibatch Loss = " + \
                               "{:.6f}".format(loss/batch_size) + ", Training Accuracy = " + \
                               "{:.5f}".format(acc))
 
-                        writer.add_summary(summary, epochs )
+                        writer.add_summary(summary, epochs)
 
                         # break condition
                         if epochs > min_epochs and acc > 0.9:
@@ -140,7 +138,6 @@ with tf.Session() as sess:
                     # When done, ask the threads to stop.
                     # coord.request_stop()
                     pass
-        # coord.join(threads)
 
         # validation
         for vol_val_f in val_vol_list:
@@ -200,5 +197,3 @@ with tf.Session() as sess:
                     pass
 
     print("Optimization Finished!")
-
-    sess.close()
