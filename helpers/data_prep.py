@@ -11,6 +11,52 @@ liver = 1
 kidney = 2
 
 
+def get_folders_dir(user, env):
+    if (user == 'tal'):
+        if (env == 'test'):
+            vol_src_path = "C:\\CT\\Test\\Volumes"
+            seg_src_path = "C:\\CT\\Test\\Segmentations"
+            vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
+            seg_dest_path = "C:\\CT\\Test\\Train\\Class"
+            train_vol_path = "C:\\CT\\Test\\Train\\Volumes"
+            train_class_path = "C:\\CT\\Test\\Train\\Class"
+            val_vol_path = "C:\\CT\\Test\\Val\\Volumes"
+            val_class_path = "C:\\CT\\Test\\Val\\Class"
+        elif (env == 'prod'):
+            vol_src_path = "C:\\CT\\Volumes"
+            seg_src_path = "C:\\CT\\Segmentations"
+            vol_dest_path = "C:\\CT\\Train\\Volumes"
+            seg_dest_path = "C:\\CT\\Train\\Class"
+            train_vol_path = "C:\\CT\\Train\\Volumes"
+            train_class_path = "C:\\CT\\Train\\Class"
+            val_vol_path = "C:\\CT\\Val\\Volumes"
+            val_class_path = "C:\\CT\\Val\\Class"
+
+    if (user == 'guy'):
+        if (env == 'test'):
+            vol_src_path = "/home/guy/project/CT/Test/Volumes"
+            seg_src_path = "/home/guy/project/CT/Test/Segmentations"
+            vol_dest_path = "/home/guy/project/CT/Test/Train/Volumes"
+            seg_dest_path = "/home/guy/project/CT/Test/Train/Class"
+            train_vol_path = "/home/guy/project/CT/Test/Train/Volumes"
+            train_class_path = "/home/guy/project/CT/Test/Train/Class"
+            val_vol_path = "/home/guy/project/CT/Test/Val/Volumes"
+            val_class_path = "/home/guy/project/CT/Test/Val/Class"
+
+        elif (env == 'prod'):
+            vol_src_path = "/home/guy/project/CT/Volumes"
+            seg_src_path = "/home/guy/project/CT/Segmentations"
+            vol_dest_path = "/home/guy/project/CT/Train/Volumes"
+            seg_dest_path = "/home/guy/project/CT/Train/Class"
+            train_vol_path = "/home/guy/project/CT/Train/Volumes"
+            train_class_path = "/home/guy/project/CT/Train/Class"
+            val_vol_path = "/home/guy/project/CT/Val/Volumes"
+            val_class_path = "/home/guy/project/CT/Val/Class"
+
+    return vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, train_vol_path,\
+           train_class_path, train_class_path, val_vol_path, val_class_path
+
+
 def randomize_file_list(file_list):
     tmp = list(file_list) #copy list object
     shuffle(tmp) # TODO use tf shuffle
