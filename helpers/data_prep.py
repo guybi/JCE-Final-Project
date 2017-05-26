@@ -1,6 +1,6 @@
 import numpy as np
 import SimpleITK as stk
-import os
+import os, sys
 import random
 from PIL import Image
 from random import shuffle
@@ -9,6 +9,8 @@ from random import shuffle
 nothing = 0
 liver = 1
 kidney = 2
+spleen = 3
+aorta = 4
 
 
 def get_folders_dir(user, env):
@@ -22,6 +24,7 @@ def get_folders_dir(user, env):
             train_class_path = "C:\\CT\\Test\\Train\\Class"
             val_vol_path = "C:\\CT\\Test\\Val\\Volumes"
             val_class_path = "C:\\CT\\Test\\Val\\Class"
+            weights_dir = "C:\\CT\\Test\\Weights"
         elif (env == 'prod'):
             vol_src_path = "C:\\CT\\Volumes"
             seg_src_path = "C:\\CT\\Segmentations"
@@ -31,6 +34,7 @@ def get_folders_dir(user, env):
             train_class_path = "C:\\CT\\Train\\Class"
             val_vol_path = "C:\\CT\\Val\\Volumes"
             val_class_path = "C:\\CT\\Val\\Class"
+            weights_dir = "C:\\CT\\Weights"
 
     if (user == 'guy'):
         if (env == 'test'):
@@ -54,7 +58,7 @@ def get_folders_dir(user, env):
             val_class_path = "/home/guy/project/CT/Val/Class"
 
     return vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, train_vol_path,\
-           train_class_path, train_class_path, val_vol_path, val_class_path
+           train_class_path, train_class_path, val_vol_path, val_class_path, weights_dir
 
 
 def randomize_file_list(file_list):
@@ -163,10 +167,12 @@ def ret_class_file(vol_fn, class_list):
     ind = tmp_class_list.index(tmp_vol_fn)
     return class_list[ind]
 
+"""
+prepare data for liver and kindeys detection
+"""
+def prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
 
-def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
-
-    start = 300
+    start = 245
     end = 600
     downsample = 1
     dxy = 4
@@ -208,20 +214,32 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
         # read liver segmentation
         print('read liver segmentation...')
-        tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, liverId))  # read liver segmentation
+        file_name = getSegFileName(seg_src_path, f, liverId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)  # read liver segmentation
         liver_seg = stk.GetArrayFromImage(tmp)
         liver_seg = seg_size_reduce(liver_seg.astype(np.float32), downsample, start, end)  # reduce size of liver_seg image
 
         # read left kidney segmentation
         print('read left kidney segmentation...')
-        tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, kindeyLId))
+        file_name = getSegFileName(seg_src_path, f, kindeyLId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)
         left_kidney_seg = stk.GetArrayFromImage(tmp)
         left_kidney_seg = seg_size_reduce(left_kidney_seg.astype(np.float32), downsample, start,
                                              end)  # reduce size of left_kid_seg image
 
         # read right kidney segmentation
         print('read right kidney segmentation...')
-        tmp = stk.ReadImage(seg_src_path + "/" + getSegFileName(seg_src_path, f, kidneyRId))  # read left kidney seg
+        file_name = getSegFileName(seg_src_path, f, kidneyRId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)  # read left kidney seg
         right_kidney_seg = stk.GetArrayFromImage(tmp)
         right_kidney_seg = seg_size_reduce(right_kidney_seg.astype(np.float32), downsample, start,
                                               end)  # reduce size of right_kid_seg image
@@ -316,8 +334,366 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
     print('###############################################################################')
 
+"""
+prepare data for aorta and apleen detection
+"""
+def prep_data_aorta_spleen(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
 
-def norm_data(vol_src_path, seg_src_path):
+    start = 245
+    end = 385
+    downsample = 1
+    dxy = 4
+    patch_size = 14
+
+    spleenId = 86
+    aortaId = 480
+
+    vol_list = os.listdir(vol_src_path)
+    print("List of input files:")
+    print(vol_list)
+
+    if not (os.path.exists(vol_dest_path)):
+        os.makedirs(vol_dest_path)
+
+    if not (os.path.exists(seg_dest_path)):
+        os.makedirs(seg_dest_path)
+
+    k = 0
+
+    for f in vol_list:
+
+        print('###############################################################################')
+
+        # read volume
+        print('read file...', f)
+        tmp_img = stk.ReadImage(vol_src_path + '/' + f)
+        input_vol = stk.GetArrayFromImage(tmp_img)
+
+        # reduce volume to relevant size
+        print('reduce image size...')
+        d = input_vol.shape
+        if (start > d[0] or end > d[0]):
+            start = 0
+            end = d[0]
+        input_vol = vol_size_reduce(input_vol.astype(np.float32), downsample, start, end)
+
+        # read spleen segmentation
+        print('read spleen segmentation...')
+        file_name = getSegFileName(seg_src_path, f, spleenId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)  # read spleen segmentation
+        spleen_seg = stk.GetArrayFromImage(tmp)
+        spleen_seg = seg_size_reduce(spleen_seg.astype(np.float32), downsample, start, end)  # reduce size of spleen_seg image
+
+        #read aorta segmentation
+        print('read aorta segmentation...')
+        file_name = getSegFileName(seg_src_path, f, aortaId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name) # read aorta segmentation
+        aorta_seg = stk.GetArrayFromImage(tmp)
+        aorta_seg = seg_size_reduce(aorta_seg.astype(np.float32), downsample, start, end) # reduce size of aorta_seg image
+
+        # turn segmentation matrices into 1.0 or 0.0 values
+        spleen_seg[np.where(spleen_seg > 1)] = 1
+        aorta_seg[np.where(aorta_seg > 1)] = 1
+
+        # get initial random shift number
+        g_r_count = 0  # counter for good iters where #kidneys/#livers >= klr
+        r_count = 0  # counter for total number of iterations
+        shifts_list = list()
+
+        while (g_r_count < dxy and r_count < 20):
+            f = False
+            dx, dy = random.randint(0, 15), random.randint(0, 15)
+
+            # check if dx dy was previously used
+            for dxdy in shifts_list:
+                if (dxdy[0] == dx and dxdy[1] == dy):
+                    f = True
+                    break
+
+            if f:  # if used before go to next iteration with advancing counters
+                continue
+            else:  # if not used
+
+                # create shifted images
+                shifted_input_vol = Im2Blks(input_vol, patch_size, dx, dy)
+                shifted_spleen_seg = Im2Blks(spleen_seg, patch_size, dx, dy)
+                shifted_aorta_seg = Im2Blks(aorta_seg, patch_size, dx, dy)
+
+                # remove irrelevant patches
+                # if all values in patch are less than 10 hounsfeld  -> remove patch
+                # if all values in ptach above 400 hounsfeld -> remove patch
+                # if patch is not uniformly segmented  -> remove patch
+
+                s = shifted_input_vol.shape  # size changed because array was reshaped
+                ind_del = list()  # indexes of patches to delete
+                res_array = list()  # result array nothing = 0, liver = 1, kidney = 2
+
+                for i in range(s[0]):
+                    if (((shifted_input_vol[i, :, :] < 10).all()) or (
+                    (shifted_input_vol[i, :, :] > 400).all()) or \
+                                (np.sum(shifted_spleen_seg[i, :, :]) > 0 and np.sum(
+                                    shifted_spleen_seg[i, :, :]) < seg_ratio * patch_size ** 2) or \
+                                (np.sum(shifted_aorta_seg[i, :, :]) > 0 and np.sum(
+                                    shifted_aorta_seg[i, :, :]) < seg_ratio * patch_size ** 2)):
+                        ind_del.append(i)
+
+                    # build result_seg_array
+                    if (np.sum(shifted_spleen_seg[i, 0, :, :]) >= seg_ratio * patch_size ** 2):
+                        res_array.append(spleen)
+                    elif (np.sum(shifted_aorta_seg[i, 0, :, :]) >= seg_ratio * patch_size ** 2):
+                        res_array.append(aorta)
+                    else:
+                        res_array.append(nothing)
+
+                # delete irrelevant patches
+                shifted_input_vol = np.delete(shifted_input_vol, ind_del, 0)
+                y_res = np.delete(np.array(res_array), ind_del, 0)
+
+                # calc and print stats for each volume
+                spleen_count = len(y_res[np.where(y_res == 3)])
+                aorta_count = len(y_res[np.where(y_res == 4)])
+                nothing_count = len(y_res) - spleen_count - aorta_count
+
+                # check if aorta to spleen ration better than klr
+                if spleen_count == 0 or aorta_count == 0:
+                    continue
+                if spleen_count / float(aorta_count) < klr / float(100):
+                    r_count += 1
+                else:
+                    # save numpy input_vol array to disk
+                    # save numpy y_res vector to disk
+                    print("shifts are: dx = " + str(dx) + " dy = " + str(dy))
+                    print(str(spleen_count) + " spleen patches, " + str(
+                        aorta_count) + " aorta patches and " + str(
+                        nothing_count) + \
+                          " the rest")
+                    np.save(
+                        vol_dest_path + "/Volume_patchsize_" + str(patch_size) + "_" + str(k) + "_xshift" + str(
+                            dx) + "_yshift" + str(dy), shifted_input_vol)
+                    np.save(seg_dest_path + "/Classification_patchsize_" + str(patch_size) + "_" + str(
+                        k) + "_xshift" + str(dx) + "_yshift" + str(dy), y_res)
+                    r_count += 1
+                    g_r_count += 1
+
+            shifts_list.append([dx, dy])  # mark used random shifts pair
+
+        print("saved " + str(g_r_count) + " random shifted files out of " + str(dxy))
+        k += 1
+
+        print('###############################################################################')
+
+"""
+prepare data for liver, kidneys, aorta and apleen detection
+"""
+def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
+
+    start = 245
+    end = 600
+    downsample = 1
+    dxy = 4
+    patch_size = 14
+
+    liverId = 58
+    spleenId = 86
+    aortaId = 480
+    kindeyLId = 29662
+    kidneyRId = 29663
+
+    vol_list = os.listdir(vol_src_path)
+    print("List of input files:")
+    print(vol_list)
+
+    if not (os.path.exists(vol_dest_path)):
+        os.makedirs(vol_dest_path)
+
+    if not (os.path.exists(seg_dest_path)):
+        os.makedirs(seg_dest_path)
+
+    k = 0
+
+    for f in vol_list:
+
+        print('###############################################################################')
+
+        # read volume
+        print('read file...', f)
+        tmp_img = stk.ReadImage(vol_src_path + '/' + f)
+        input_vol = stk.GetArrayFromImage(tmp_img)
+
+        # reduce volume to relevant size
+        print('reduce image size...')
+        d = input_vol.shape
+        if (start > d[0] or end > d[0]):
+            start = 0
+            end = d[0]
+        input_vol = vol_size_reduce(input_vol.astype(np.float32), downsample, start, end)
+
+        # read liver segmentation
+        print('read liver segmentation...')
+        file_name = getSegFileName(seg_src_path, f, liverId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)  # read liver segmentation
+        liver_seg = stk.GetArrayFromImage(tmp)
+        liver_seg = seg_size_reduce(liver_seg.astype(np.float32), downsample, start, end)  # reduce size of liver_seg image
+
+        # read spleen segmentation
+        print('read spleen segmentation...')
+        file_name = getSegFileName(seg_src_path, f, spleenId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)  # read spleen segmentation
+        spleen_seg = stk.GetArrayFromImage(tmp)
+        spleen_seg = seg_size_reduce(spleen_seg.astype(np.float32), downsample, start,
+                                     end)  # reduce size of spleen_seg image
+
+        # read aorta segmentation
+        print('read aorta segmentation...')
+        file_name = getSegFileName(seg_src_path, f, aortaId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)  # read aorta segmentation
+        aorta_seg = stk.GetArrayFromImage(tmp)
+        aorta_seg = seg_size_reduce(aorta_seg.astype(np.float32), downsample, start,
+                                    end)  # reduce size of aorta_seg image
+
+        # read left kidney segmentation
+        print('read left kidney segmentation...')
+        file_name = getSegFileName(seg_src_path, f, kindeyLId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)
+        left_kidney_seg = stk.GetArrayFromImage(tmp)
+        left_kidney_seg = seg_size_reduce(left_kidney_seg.astype(np.float32), downsample, start,
+                                             end)  # reduce size of left_kid_seg image
+
+        # read right kidney segmentation
+        print('read right kidney segmentation...')
+        file_name = getSegFileName(seg_src_path, f, kidneyRId)
+        if file_name == 'Fail':
+            print('segmentation not found. exiting...')
+            sys.exit(0)
+        tmp = stk.ReadImage(seg_src_path + "/" + file_name)  # read left kidney seg
+        right_kidney_seg = stk.GetArrayFromImage(tmp)
+        right_kidney_seg = seg_size_reduce(right_kidney_seg.astype(np.float32), downsample, start,
+                                              end)  # reduce size of right_kid_seg image
+
+        # make one kidney segmentation file
+        print('merge left and right kidney segmentations...')
+        kidney_seg = np.add(right_kidney_seg, left_kidney_seg)
+
+        # turn segmentation matrices into 1.0 or 0.0 values
+        kidney_seg[np.where(kidney_seg > 1)] = 1
+        spleen_seg[np.where(spleen_seg > 1)] = 1
+        aorta_seg[np.where(aorta_seg > 1)] = 1
+        liver_seg[np.where(liver_seg > 1)] = 1
+
+        # get initial random shift number
+        g_r_count = 0  # counter for good iters where #kidneys/#livers >= klr
+        r_count = 0  # counter for total number of iterations
+        shifts_list = list()
+
+        while (g_r_count < dxy and r_count < 20):
+            f = False
+            dx, dy = random.randint(0, 15), random.randint(0, 15)
+
+            # check if dx dy was previously used
+            for dxdy in shifts_list:
+                if (dxdy[0] == dx and dxdy[1] == dy):
+                    f = True
+                    break
+
+            if f:  # if used before go to next iteration with advancing counters
+                continue
+            else:  # if not used
+
+                # create shifted images
+                shifted_input_vol = Im2Blks(input_vol, patch_size, dx, dy)
+                shifted_liver_seg = Im2Blks(liver_seg, patch_size, dx, dy)
+                shifted_kidney_seg = Im2Blks(kidney_seg, patch_size, dx, dy)
+                shifted_spleen_seg = Im2Blks(spleen_seg, patch_size, dx, dy)
+                shifted_aorta_seg = Im2Blks(aorta_seg, patch_size, dx, dy)
+
+                # remove irrelevant patches
+                # if all values in patch are less than 10 hounsfeld  -> remove patch
+                # if all values in ptach above 400 hounsfeld -> remove patch
+                # if patch is not uniformly segmented  -> remove patch
+
+                s = shifted_input_vol.shape  # size changed because array was reshaped
+                ind_del = list()  # indexes of patches to delete
+                res_array = list()  # result array nothing = 0, liver = 1, kidney = 2
+
+                for i in range(s[0]):
+                    if (((shifted_input_vol[i, :, :] < 10).all()) or ((shifted_input_vol[i, :, :] > 400).all()) or \
+                                (np.sum(shifted_liver_seg[i, :, :]) > 0 and np.sum(
+                                    shifted_liver_seg[i, :, :]) < seg_ratio * patch_size ** 2) or \
+                                (np.sum(shifted_kidney_seg[i, :, :]) > 0 and np.sum(
+                                    shifted_kidney_seg[i, :, :]) < seg_ratio * patch_size ** 2) or \
+                                (np.sum(shifted_spleen_seg[i, :, :]) > 0 and np.sum(
+                                    shifted_spleen_seg[i, :, :]) < seg_ratio * patch_size ** 2) or \
+                                (np.sum(shifted_aorta_seg[i, :, :]) > 0 and np.sum(
+                                    shifted_aorta_seg[i, :, :]) < seg_ratio * patch_size ** 2)):
+                        ind_del.append(i)
+
+                    # build result_seg_array
+                    if (np.sum(shifted_liver_seg[i, 0, :, :]) >= seg_ratio * patch_size ** 2):
+                        res_array.append(liver)
+                    elif (np.sum(shifted_kidney_seg[i, 0, :, :]) >= seg_ratio * patch_size ** 2):
+                        res_array.append(kidney)
+                    elif (np.sum(shifted_spleen_seg[i, 0, :, :]) >= seg_ratio * patch_size ** 2):
+                        res_array.append(spleen)
+                    elif (np.sum(shifted_aorta_seg[i, 0, :, :]) >= seg_ratio * patch_size ** 2):
+                        res_array.append(aorta)
+                    else:
+                        res_array.append(nothing)
+
+                # delete irrelevant patches
+                shifted_input_vol = np.delete(shifted_input_vol, ind_del, 0)
+                y_res = np.delete(np.array(res_array), ind_del, 0)
+
+                # calc and print stats for each volume
+                kidney_count = len(y_res[np.where(y_res == 2)])
+                liver_count = len(y_res[np.where(y_res == 1)])
+                spleen_count = len(y_res[np.where(y_res == 3)])
+                aorta_count = len(y_res[np.where(y_res == 4)])
+                nothing_count = len(y_res) - kidney_count - liver_count - spleen_count - aorta_count
+
+                # check if kidney to liver ration better than klr
+                if kidney_count / float(liver_count) < klr / float(100):
+                    r_count += 1
+                else:
+                    # save numpy input_vol array to disk
+                    # save numpy y_res vector to disk
+                    print("shifts are: dx = " + str(dx) + " dy = " + str(dy))
+                    print(str(kidney_count) + " kidney patches, " + str(liver_count) + " liver patches and " +
+                          str(spleen_count) + " spleen patches, " + str(aorta_count) + " aorta patches and " +
+                          str(nothing_count) + " the rest")
+                    np.save(vol_dest_path + "/Volume_patchsize_" + str(patch_size) + "_" + str(k) + "_xshift" + str(
+                        dx) + "_yshift" + str(dy), shifted_input_vol)
+                    np.save(seg_dest_path + "/Classification_patchsize_" + str(patch_size) + "_" + str(
+                        k) + "_xshift" + str(dx) + "_yshift" + str(dy), y_res)
+                    r_count += 1
+                    g_r_count += 1
+
+            shifts_list.append([dx, dy])  # mark used random shifts pair
+
+        print("saved " + str(g_r_count) + " random shifted files out of " + str(dxy))
+        k += 1
+
+    print('###############################################################################')
+
+
+def norm_data_liver_kidneys(vol_src_path, seg_src_path):
 
     vol_list = os.listdir(vol_src_path)  # get list of validation volumes
     class_list = os.listdir(seg_src_path)  # get list of validation classification arrays
@@ -383,26 +759,109 @@ def norm_data(vol_src_path, seg_src_path):
         np.save(seg_src_path + "\\" + class_f, new_class)
 
 
+def norm_data_aorta_spleen(vol_src_path, seg_src_path):
+
+    vol_list = os.listdir(vol_src_path)  # get list of validation volumes
+    class_list = os.listdir(seg_src_path)  # get list of validation classification arrays
+
+    # create sub list of file names
+    val_vol_list = list()
+    for ind in range(0, 18):
+        for f in vol_list:
+            split_fn = f.split("_")
+            if (split_fn[3] == str(ind)):
+                val_vol_list.append(f)
+
+    for f in val_vol_list:
+        print("normalizing data file: " + f)
+        vol = np.load(vol_src_path + "/" + f)  # load volume data
+        class_f = ret_class_file(f, class_list)  # get class file name
+        cat = np.load(seg_src_path + "/" + class_f)  # load class data
+
+        # get indexes of each type of patch
+        spleen_ind = np.where(cat == spleen)
+        aorta_ind = np.where(cat == aorta)
+        nothing_ind = np.where(cat == nothing)
+
+        # get all spleen patches
+        spleens = vol[spleen_ind[0], :, :, :]
+        # get nothings patches in random order
+        tmp = np.array(vol[nothing_ind[0], :, :, :], dtype=np.float32)
+        np.random.shuffle(tmp)
+        nothings = tmp
+        # create extended aorta data
+        if (len(aorta_ind[0] != 0)):
+            r = len(spleen_ind[0]) / len(aorta_ind[0])
+            tmp = vol[aorta_ind[0]]
+            d = tmp.shape
+            aortas = np.zeros((r * d[0], d[1], d[2], d[3]), dtype=np.float32)
+            for k in range(int(r)):
+                aortas[k * d[0]:(k + 1) * d[0], :, :, :] = vol[aorta_ind[0]]
+
+        # create new classification array
+        if (len(aorta_ind[0] != 0)):
+            new_class = np.zeros(len(spleens) + len(aortas) + len(spleens), dtype=np.int32)
+            new_class[:len(spleens)] = spleen
+            new_class[len(spleens):len(spleens) + len(aortas)] = aorta
+            new_class[len(spleens) + len(aortas):] = nothing
+        else:
+            new_class = np.zeros(2 * len(spleens), dtype=np.int32)
+            new_class[:len(spleens)] = spleen
+            new_class[len(spleens):] = nothing
+
+        # create a new and smaller numpy volumes array
+        if (len(aorta_ind[0] != 0)):
+            new_vol = np.zeros((len(spleens) + len(aortas) + len(spleens), d[1], d[2], d[3]), dtype=np.float32)
+            new_vol[:len(spleens), :, :, :] = spleens
+            new_vol[len(spleens):len(spleens) + len(aortas), :, :, :] = aortas
+            new_vol[len(spleens) + len(aortas):, :, :, :] = nothings[0:len(spleens)]
+        else:
+            new_vol = np.zeros((2 * len(spleens), d[1], d[2], d[3]), dtype=np.float32)
+            new_vol[:len(spleens), :, :, :] = spleens
+            new_vol[len(spleens):, :, :, :] = nothings[0:len(spleens)]
+
+        # overwrite original files
+        np.save(vol_src_path + "\\" + f, new_vol)
+        np.save(seg_src_path + "\\" + class_f, new_class)
+
+
 def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
-    if (os.path.exists(vol_dest_path) and os.path.exists(seg_dest_path)):
+    if os.path.exists(vol_dest_path) and os.path.exists(seg_dest_path):
         vol_list = os.listdir(vol_dest_path)
         seg_list = os.listdir(seg_dest_path)
-        if(len(vol_list) != 0 or len(seg_list) != 0):
+        if len(vol_list) != 0 or len(seg_list) != 0:
             print('Shifted data found.')
-            return;
+            return 1
         else:
             print('Shifted data directory is empty. Prepare data...')
+            # if organs == 'liver_kidneys':
+            #     prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+            #     print('Normalize data...')
+            #     norm_data_liver_kidneys(vol_dest_path, seg_dest_path)
+            # elif organs == 'spleen_aorta':
+            #     prep_data_aorta_spleen(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+            # else:
+            #     return -1
             prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
             print('Normalize data...')
             norm_data(vol_dest_path, seg_dest_path)
+
     else:
         print('No shifted data found. Prepare data...')
+        # if organs == 'liver_kidneys':
+        #     prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+        #     print('Normalize data...')
+        #     norm_data_liver_kidneys(vol_dest_path, seg_dest_path)
+        # elif organs == 'spleen_aorta':
+        #     prep_data_aorta_spleen(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+        # else:
+        #     return -1
         prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
         print('Normalize data...')
         norm_data(vol_dest_path, seg_dest_path)
 
 
-def norm_data_rand(vol, cat):
+def norm_data_rand_liver_kindeys(vol, cat):
     # get indexes of each type of patch
     liver_ind = np.where(cat == liver)
     kidney_ind = np.where(cat == kidney)
@@ -415,7 +874,7 @@ def norm_data_rand(vol, cat):
     np.random.shuffle(tmp)
     nothings = tmp
     # create extended kidneys data
-    if (len(kidney_ind[0] != 0)):
+    if len(kidney_ind[0] != 0):
         r = int(len(liver_ind[0]) / len(kidney_ind[0]))
         tmp = vol[kidney_ind[0]]
         d = tmp.shape
@@ -424,7 +883,7 @@ def norm_data_rand(vol, cat):
             kidneys[k * d[0]:(k + 1) * d[0], :, :, :] = vol[kidney_ind[0]]
 
     # create new classification array
-    if (len(kidney_ind[0] != 0)):
+    if len(kidney_ind[0] != 0):
         new_class = np.zeros(len(livers) + len(kidneys) + len(livers), dtype=np.int32)
         new_class[:len(livers)] = liver
         new_class[len(livers):len(livers) + len(kidneys)] = kidney
@@ -435,7 +894,101 @@ def norm_data_rand(vol, cat):
         new_class[len(livers):] = nothing
 
     # create a new and smaller numpy volumes array
-    if (len(kidney_ind[0] != 0)):
+    if len(kidney_ind[0] != 0):
+        new_vol = np.zeros((len(livers) + len(kidneys) + len(livers), d[1], d[2], d[3]), dtype=np.float32)
+        new_vol[:len(livers), :, :, :] = livers
+        new_vol[len(livers):len(livers) + len(kidneys), :, :, :] = kidneys
+        new_vol[len(livers) + len(kidneys):, :, :, :] = nothings[0:len(livers)]
+    else:
+        new_vol = np.zeros((2 * len(livers), d[1], d[2], d[3]), dtype=np.float32)
+        new_vol[:len(livers), :, :, :] = livers
+        new_vol[len(livers):, :, :, :] = nothings[0:len(livers)]
+
+    return new_vol, new_class
+
+
+def norm_data_rand_spleen_aorta(vol, cat):
+    # get indexes of each type of patch
+    spleen_ind = np.where(cat == spleen)
+    aorta_ind = np.where(cat == aorta)
+    nothing_ind = np.where(cat == nothing)
+
+    # get all liver patches
+    spleens = vol[spleen_ind[0], :, :, :]
+    # get nothings patches in random order
+    tmp = np.array(vol[nothing_ind[0], :, :, :], dtype=np.float32)
+    np.random.shuffle(tmp)
+    nothings = tmp
+    # create extended kidneys data
+    if len(aorta_ind[0] != 0):
+        r = int(len(spleen_ind[0]) / len(aorta_ind[0]))
+        tmp = vol[aorta_ind[0]]
+        d = tmp.shape
+        aortas = np.zeros((r * d[0], d[1], d[2], d[3]), dtype=np.float32)
+        for k in range(r):
+            aortas[k * d[0]:(k + 1) * d[0], :, :, :] = vol[aorta_ind[0]]
+
+    # create new classification array
+    if len(aorta_ind[0] != 0):
+        new_class = np.zeros(len(spleens) + len(aortas) + len(spleens), dtype=np.int32)
+        new_class[:len(spleens)] = spleen
+        new_class[len(spleens):len(spleens) + len(aortas)] = aorta
+        new_class[len(spleens) + len(aortas):] = nothing
+    else:
+        new_class = np.zeros(2 * len(spleens), dtype=np.int32)
+        new_class[:len(spleens)] = spleen
+        new_class[len(spleens):] = nothing
+
+    # create a new and smaller numpy volumes array
+    if len(aorta_ind[0] != 0):
+        new_vol = np.zeros((len(spleens) + len(aortas) + len(spleens), d[1], d[2], d[3]), dtype=np.float32)
+        new_vol[:len(spleens), :, :, :] = spleens
+        new_vol[len(spleens):len(spleens) + len(aortas), :, :, :] = aortas
+        new_vol[len(spleens) + len(aortas):, :, :, :] = nothings[0:len(spleens)]
+    else:
+        new_vol = np.zeros((2 * len(spleens), d[1], d[2], d[3]), dtype=np.float32)
+        new_vol[:len(spleens), :, :, :] = spleens
+        new_vol[len(spleens):, :, :, :] = nothings[0:len(spleens)]
+
+    return new_vol, new_class
+
+
+def norm_data(vol, cat):
+    # get indexes of each type of patch
+    liver_ind = np.where(cat == liver)
+    kidney_ind = np.where(cat == kidney)
+    spleen_ind = np.where(cat == spleen)
+    aorta_ind = np.where(cat == aorta)
+    nothing_ind = np.where(cat == nothing)
+
+    # get all liver patches
+    livers = vol[liver_ind[0], :, :, :]
+    # get nothings patches in random order
+    tmp = np.array(vol[nothing_ind[0], :, :, :], dtype=np.float32)
+    np.random.shuffle(tmp)
+    nothings = tmp
+    # create extended kidneys data
+    if len(kidney_ind[0] != 0):
+        r = int(len(liver_ind[0]) / len(kidney_ind[0]))
+        tmp = vol[kidney_ind[0]]
+        d = tmp.shape
+        kidneys = np.zeros((r * d[0], d[1], d[2], d[3]), dtype=np.float32)
+        for k in range(r):
+            kidneys[k * d[0]:(k + 1) * d[0], :, :, :] = vol[kidney_ind[0]]
+
+    # create new classification array
+    if len(kidney_ind[0] != 0):
+        new_class = np.zeros(len(livers) + len(kidneys) + len(livers), dtype=np.int32)
+        new_class[:len(livers)] = liver
+        new_class[len(livers):len(livers) + len(kidneys)] = kidney
+        new_class[len(livers) + len(kidneys):] = nothing
+    else:
+        new_class = np.zeros(2 * len(livers), dtype=np.int32)
+        new_class[:len(livers)] = liver
+        new_class[len(livers):] = nothing
+
+    # create a new and smaller numpy volumes array
+    if len(kidney_ind[0] != 0):
         new_vol = np.zeros((len(livers) + len(kidneys) + len(livers), d[1], d[2], d[3]), dtype=np.float32)
         new_vol[:len(livers), :, :, :] = livers
         new_vol[len(livers):len(livers) + len(kidneys), :, :, :] = kidneys
@@ -475,13 +1028,27 @@ def prepare_val_train_data(vol_src_path, seg_src_path, val_vol_dest_path, val_se
         # get indexes of each type of patch
         liver_ind = np.where(cat == liver)
         kidney_ind = np.where(cat == kidney)
+        spleen_ind = np.where(cat == spleen)
+        aorta_ind = np.where(cat == aorta)
         nothing_ind = np.where(cat == nothing)
 
-        kidneys = vol[kidney_ind[0], :, :, :]  # getkidney patches
+        kidneys = vol[kidney_ind[0], :, :, :] # get kidney patches
+
         # get liver patches in random order
         tmp = np.array(vol[liver_ind[0], :, :, :], dtype=np.float32)
         np.random.shuffle(tmp)
         livers = tmp
+
+        # get spleen patches in random order
+        tmp = np.array(vol[spleen_ind[0], :, :, :], dtype=np.float32)
+        np.random.shuffle(tmp)
+        spleens = tmp
+
+        # get aorta patches in random order
+        tmp = np.array(vol[aorta_ind[0], :, :, :], dtype=np.float32)
+        np.random.shuffle(tmp)
+        aortas = tmp
+
         # get nothing patches in random order
         tmp = np.array(vol[nothing_ind[0], :, :, :], dtype=np.float32)
         np.random.shuffle(tmp)
@@ -491,16 +1058,20 @@ def prepare_val_train_data(vol_src_path, seg_src_path, val_vol_dest_path, val_se
         # first elements shall be kidneys, then livers and then nothing patches
         # assuming: there's less kidney patches than liver and nothing
         d = kidneys.shape
-        new_class = np.zeros(3 * d[0], dtype=np.int32)
+        new_class = np.zeros(5 * d[0], dtype=np.int32)
         new_class[0:d[0]] = kidney
-        new_class[d[0]:2 * d[0]] = liver
-        new_class[2 * d[0]:] = nothing
+        new_class[d[0]:2 * d[0]:3] = liver
+        new_class[d[0]:3 * d[0]:4] = spleen
+        new_class[d[0]:4 * d[0]:5] = aorta
+        new_class[5 * d[0]:] = nothing
 
         # create a new and smaller numpy volumes array
-        new_vol = np.zeros((3 * d[0], d[1], d[2], d[3]), dtype=np.float32)
+        new_vol = np.zeros((5 * d[0], d[1], d[2], d[3]), dtype=np.float32)
         new_vol[0:d[0]] = kidneys
-        new_vol[d[0]:2 * d[0]] = livers[0:d[0]]
-        new_vol[2 * d[0]:] = nothings[0:d[0]]
+        new_vol[d[0]:2 * d[0]:3] = livers[0:d[0]]
+        new_vol[d[0]:3 * d[0]:4] = spleens
+        new_vol[d[0]:4 * d[0]:5] = aortas
+        new_vol[5 * d[0]:] = nothings[0:d[0]]
 
         # save files to path
         np.save(val_vol_dest_path + "\\" + f, new_vol)

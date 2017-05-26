@@ -1,4 +1,4 @@
-import os
+import os, sys
 import tensorflow as tf
 import numpy as np
 from helpers import data_prep
@@ -22,12 +22,20 @@ display_step = 10
 min_epochs = 1000
 validation_files_ind = [8, 9]
 n_classes = 3
+# organs = 'spleen_aorta'
 
 x = tf.placeholder(tf.float32, [None, None, None, None], name='x')
 y = tf.placeholder(tf.float32, [None,3], name='y')
+step_var = tf.Variable(1, name='step_var', trainable=False)
 
-vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, train_vol_path,\
-           train_class_path, train_class_path, val_vol_path, val_class_path = data_prep.get_folders_dir(user, env)
+vol_src_path, seg_src_path, vol_dest_path,\
+seg_dest_path, train_vol_path, train_class_path,\
+train_class_path, val_vol_path, val_class_path, weights_dir = data_prep.get_folders_dir(user, env)
+
+# ok = data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr, organs)
+# if not ok:
+#     print('no organs selected for data preparation function.')
+#     sys.exit(0)
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 data_prep.prepare_val_train_data(vol_dest_path, seg_dest_path, val_vol_path, val_class_path, validation_files_ind)
@@ -62,7 +70,7 @@ with tf.name_scope('accuracy'):
 tf.summary.scalar("accuracy", accuracy)
 
 merged_summary = tf.summary.merge_all()
-# saver = tf.train.Saver()
+saver = tf.train.Saver()
 
 # Initializing the variables
 init = tf.global_variables_initializer()
@@ -71,10 +79,18 @@ print('start tensorflow session...')
 
 with tf.Session() as sess:
     sess.run(init)
+
     step = 1
 
     writer = tf.summary.FileWriter("log/train", sess.graph)
     writer_validation = tf.summary.FileWriter("log/validation", sess.graph)
+
+    if tf.train.latest_checkpoint(weights_dir):
+        saver.restore(sess, tf.train.latest_checkpoint(weights_dir))
+        print('Model restored from latest checkpoint.')
+
+    # get latest step
+    step = step_var.eval()
 
     # Keep training until reach max iterations
     while step < training_iters:
@@ -87,7 +103,13 @@ with tf.Session() as sess:
             x_data = np.load(train_vol_path + "/" + vol_f)
             y_data = np.load(train_class_path + "/" + class_f)
 
-            x_data, label_data = data_prep.norm_data_rand(x_data, y_data)
+            # if organs == 'liver_kindeys':
+            #     x_data, label_data = data_prep.norm_data_rand_liver_kindeys(x_data, y_data)
+            # elif organs == 'spleen_aorta':
+            #     x_data, label_data = data_prep.norm_data_rand_spleen_aorta(x_data, y_data)
+            #     label_data[:] = label_data - 2
+
+            x_data, label_data = data_prep.norm_data(x_data, y_data)
 
             n = np.size(label_data,0)
             y_data = np.zeros([n,3])
@@ -124,6 +146,11 @@ with tf.Session() as sess:
 
                         writer.add_summary(summary, epochs)
 
+                        if step % (display_step*10) == 0:
+                            tf.assign(step_var, step).eval()
+                            save_path = saver.save(sess, weights_dir + '\\weights')
+                            print("Model saved in file: %s" % save_path)
+
                         # break condition
                         if epochs > min_epochs and acc > 0.9:
                             break
@@ -135,8 +162,6 @@ with tf.Session() as sess:
                     print('Done training -- epoch limit reached')
                     coord.request_stop()
                 finally:
-                    # When done, ask the threads to stop.
-                    # coord.request_stop()
                     pass
 
         # validation
@@ -181,6 +206,11 @@ with tf.Session() as sess:
                               "{:.5f}".format(acc))
 
                         writer_validation.add_summary(summary, epochs)
+
+                        if step % (display_step*10) == 0:
+                            tf.assign(step_var, step).eval()
+                            save_path = saver.save(sess, weights_dir + '\\weights')
+                            print("Model saved in file: %s" % save_path)
 
                         # break condition
                         if epochs > min_epochs and acc > 0.9:
