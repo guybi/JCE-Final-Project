@@ -22,7 +22,6 @@ display_step = 10
 min_epochs = 1000
 validation_files_ind = [8, 9]
 n_classes = 3
-# organs = 'spleen_aorta'
 
 x = tf.placeholder(tf.float32, [None, None, None, None], name='x')
 y = tf.placeholder(tf.float32, [None,3], name='y')
@@ -31,11 +30,6 @@ step_var = tf.Variable(1, name='step_var', trainable=False)
 vol_src_path, seg_src_path, vol_dest_path,\
 seg_dest_path, train_vol_path, train_class_path,\
 train_class_path, val_vol_path, val_class_path, weights_dir = data_prep.get_folders_dir(user, env)
-
-# ok = data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr, organs)
-# if not ok:
-#     print('no organs selected for data preparation function.')
-#     sys.exit(0)
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 data_prep.prepare_val_train_data(vol_dest_path, seg_dest_path, val_vol_path, val_class_path, validation_files_ind)
@@ -94,7 +88,6 @@ with tf.Session() as sess:
 
     # Keep training until reach max iterations
     while step < training_iters:
-        # min_epochs = 100
         for vol_f in data_prep.randomize_file_list(train_vol_list):
             print('training on', vol_f)
 
@@ -102,12 +95,6 @@ with tf.Session() as sess:
             class_f = data_prep.ret_class_file(vol_f, train_class_list)
             x_data = np.load(train_vol_path + "/" + vol_f)
             y_data = np.load(train_class_path + "/" + class_f)
-
-            # if organs == 'liver_kindeys':
-            #     x_data, label_data = data_prep.norm_data_rand_liver_kindeys(x_data, y_data)
-            # elif organs == 'spleen_aorta':
-            #     x_data, label_data = data_prep.norm_data_rand_spleen_aorta(x_data, y_data)
-            #     label_data[:] = label_data - 2
 
             x_data, label_data = data_prep.norm_data(x_data, y_data)
 
