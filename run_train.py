@@ -4,6 +4,8 @@ import numpy as np
 from helpers import data_prep
 from networks.build_network import build_network
 from networks.weights.liver_kidney_weights import get_weights_and_biases
+import SimpleITK as stk
+import nibabel as nib
 
 env = 'test'
 network = 'simple'
@@ -29,7 +31,7 @@ step_var = tf.Variable(1, name='step_var', trainable=False)
 
 vol_src_path, seg_src_path, vol_dest_path,\
 seg_dest_path, train_vol_path, train_class_path,\
-train_class_path, val_vol_path, val_class_path, weights_dir = data_prep.get_folders_dir(user, env)
+train_class_path, val_vol_path, val_class_path, weights_dir, predict_segmentations_dir = data_prep.get_folders_dir(user, env)
 
 data_prep.data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
 data_prep.prepare_val_train_data(vol_dest_path, seg_dest_path, val_vol_path, val_class_path, validation_files_ind)
@@ -97,6 +99,7 @@ with tf.Session() as sess:
             y_data = np.load(train_class_path + "/" + class_f)
 
             x_data, label_data = data_prep.norm_data(x_data, y_data)
+            predicted_seg = np.zeros(x_data.size, dtype=np.uint8)
 
             n = np.size(label_data,0)
             y_data = np.zeros([n,3])
@@ -141,6 +144,21 @@ with tf.Session() as sess:
                         # break condition
                         if epochs > min_epochs and acc > 0.9:
                             break
+
+                        # if step % (display_step * 10) == 0:
+                        #     acctual_prediction = tf.argmax(pred, axis=1)
+                        #     ap_eval = sess.run([acctual_prediction], feed_dict={x: batch_x_eval, y: batch_y_eval})
+                        #     # print(ap_eval)
+                        #
+                        #     for i in range((epochs-1)*batch_size, (epochs*batch_size)-1):
+                        #         predicted_seg[i * 196:(i + 1) * 196] = int(1) if ap_eval[0][i-((epochs-1)*batch_size)] == 1 or ap_eval[0][i-((epochs-1)*batch_size)] == 2 else 0
+                        #
+                        #     predicted_seg = predicted_seg.reshape(predicted_seg.shape[0], 1)
+                        #     stk_img = stk.GetImageFromArray(predicted_seg, isVector=False)
+                        #     stk_img = stk.Cast(stk_img, stk.sitkUInt8)
+                        #     stk_img = stk.Shrink(stk_img, [200,200,200])
+                        #     stk.WriteImage(stk_img, 'Predicted_Segmentations\\1_pseg.nii.gz')
+                        #     print('Predicted segmentation has saved.')
 
                     step += 1
                     epochs += 1

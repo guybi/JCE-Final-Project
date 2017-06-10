@@ -25,6 +25,7 @@ def get_folders_dir(user, env):
             val_vol_path = "C:\\CT\\Test\\Val\\Volumes"
             val_class_path = "C:\\CT\\Test\\Val\\Class"
             weights_dir = "C:\\CT\\Test\\Weights"
+            predict_segmentations_dir = "C:\\CT\\Test\\Train\\PredictSegmentations"
         elif (env == 'prod'):
             vol_src_path = "C:\\CT\\Volumes"
             seg_src_path = "C:\\CT\\Segmentations"
@@ -35,8 +36,9 @@ def get_folders_dir(user, env):
             val_vol_path = "C:\\CT\\Val\\Volumes"
             val_class_path = "C:\\CT\\Val\\Class"
             weights_dir = "C:\\CT\\Weights"
+            predict_segmentations_dir = "C:\\CT\\Train\\PredictSegmentations"
 
-    if (user == 'guy'):
+    elif (user == 'guy'):
         if (env == 'test'):
             vol_src_path = "/home/guy/project/CT/Test/Volumes"
             seg_src_path = "/home/guy/project/CT/Test/Segmentations"
@@ -57,8 +59,83 @@ def get_folders_dir(user, env):
             val_vol_path = "/home/guy/project/CT/Val/Volumes"
             val_class_path = "/home/guy/project/CT/Val/Class"
 
+    elif (user == 'assaf'):
+        if (env == 'test'):
+            vol_src_path = ""
+            seg_src_path = ""
+            vol_dest_path = ""
+            seg_dest_path = ""
+            train_vol_path = ""
+            train_class_path = ""
+            val_vol_path = ""
+            val_class_path = ""
+
+        elif (env == 'prod'):
+            vol_src_path = ""
+            seg_src_path = ""
+            vol_dest_path = ""
+            seg_dest_path = ""
+            train_vol_path = ""
+            train_class_path = ""
+            val_vol_path = ""
+            val_class_path = ""
+
     return vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, train_vol_path,\
-           train_class_path, train_class_path, val_vol_path, val_class_path, weights_dir
+           train_class_path, train_class_path, val_vol_path, val_class_path, weights_dir, predict_segmentations_dir
+
+
+def get_test_folders_dir(user, env):
+    if (user == 'tal'):
+        if (env == 'test'):
+            test_vol_src_path = "C:\\CT\\Test\\Volumes"
+            test_seg_src_path = "C:\\CT\\Test\\Segmentations"
+            test_vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
+            test_seg_dest_path = "C:\\CT\\Test\\Train\\Class"
+            weights_dir = "C:\\CT\\Test\\Weights"
+            predict_segmentations_dir = "C:\\CT\\Test\\Train\\PredictSegmentations"
+        elif (env == 'prod'):
+            test_vol_src_path = "C:\\CT\\Volumes"
+            test_seg_src_path = "C:\\CT\\Segmentations"
+            test_vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
+            test_seg_dest_path = "C:\\CT\\Test\\Train\\Class"
+            weights_dir = "C:\\CT\\Weights"
+            predict_segmentations_dir = "C:\\CT\\Train\\PredictSegmentations"
+
+    elif (user == 'guy'):
+        if (env == 'test'):
+            test_vol_src_path = "/home/guy/project/CT/Test/Volumes"
+            test_seg_src_path = "/home/guy/project/CT/Test/Segmentations"
+            test_vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
+            test_seg_dest_path = "C:\\CT\\Test\\Train\\Class"
+            weights_dir = "/home/guy/project/CT/Test/Weights"
+            predict_segmentations_dir = "/home/guy/project/CT/Test/PredictSegmentations"
+
+        elif (env == 'prod'):
+            test_vol_src_path = "/home/guy/project/CT/Volumes"
+            test_seg_src_path = "/home/guy/project/CT/Segmentations"
+            test_vol_dest_path = "C:\\CT\\Test\\Train\\Volumes"
+            test_seg_dest_path = "C:\\CT\\Test\\Train\\Class"
+            weights_dir = "/home/guy/project/CT/Weights"
+            predict_segmentations_dir = "/home/guy/project/CT/PredictSegmentations"
+
+    elif (user == 'assaf'):
+        if (env == 'test'):
+            test_vol_src_path = ""
+            test_seg_src_path = ""
+            test_vol_dest_path = ""
+            test_seg_dest_path = ""
+            weights_dir = ""
+            predict_segmentations_dir = ""
+
+        elif (env == 'prod'):
+            test_vol_src_path = ""
+            test_seg_src_path = ""
+            test_vol_dest_path = ""
+            test_seg_dest_path = ""
+            weights_dir = ""
+            predict_segmentations_dir = ""
+
+    return test_vol_src_path, test_seg_src_path, test_vol_dest_path, test_seg_dest_path, weights_dir, predict_segmentations_dir
 
 
 def randomize_file_list(file_list):
@@ -167,11 +244,11 @@ def ret_class_file(vol_fn, class_list):
     ind = tmp_class_list.index(tmp_vol_fn)
     return class_list[ind]
 
-"""
-prepare data for liver and kindeys detection
-"""
-def prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
 
+def prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr):
+    """
+    prepare data for liver and kindeys detection
+    """
     start = 245
     end = 600
     downsample = 1
@@ -830,10 +907,10 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
         vol_list = os.listdir(vol_dest_path)
         seg_list = os.listdir(seg_dest_path)
         if len(vol_list) != 0 or len(seg_list) != 0:
-            print('Shifted data found.')
+            print('Data found.')
             return 1
         else:
-            print('Shifted data directory is empty. Prepare data...')
+            print('Data directory is empty. Prepare data...')
             # if organs == 'liver_kidneys':
             #     prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
             #     print('Normalize data...')
@@ -842,12 +919,12 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
             #     prep_data_aorta_spleen(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
             # else:
             #     return -1
-            prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+            prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
             print('Normalize data...')
             norm_data(vol_dest_path, seg_dest_path)
 
     else:
-        print('No shifted data found. Prepare data...')
+        print('No data found. Prepare data...')
         # if organs == 'liver_kidneys':
         #     prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
         #     print('Normalize data...')
@@ -856,7 +933,7 @@ def data_load(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
         #     prep_data_aorta_spleen(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
         # else:
         #     return -1
-        prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
+        prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_ratio, klr)
         print('Normalize data...')
         norm_data(vol_dest_path, seg_dest_path)
 
@@ -957,8 +1034,8 @@ def norm_data(vol, cat):
     # get indexes of each type of patch
     liver_ind = np.where(cat == liver)
     kidney_ind = np.where(cat == kidney)
-    spleen_ind = np.where(cat == spleen)
-    aorta_ind = np.where(cat == aorta)
+    # spleen_ind = np.where(cat == spleen)
+    # aorta_ind = np.where(cat == aorta)
     nothing_ind = np.where(cat == nothing)
 
     # get all liver patches
