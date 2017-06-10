@@ -3,8 +3,9 @@ import tensorflow as tf
 import numpy as np
 from helpers import data_prep
 from networks.build_network import build_network
-import SimpleITK as stk
 from networks.weights.liver_kidney_weights import get_weights_and_biases
+import SimpleITK as stk
+import nibabel as nib
 
 env = 'test'
 network = 'simple'
@@ -70,6 +71,11 @@ with tf.Session() as sess:
         y_data = np.zeros([n, 3])
         y_data[range(n), label_data] = 1
 
+        tmp_img = stk.ReadImage(test_vol_src_path + '\\10000100_1_CTce_ThAb.nii')
+        img_dims = tmp_img.GetSize()
+        img_size = img_dims[0] * img_dims[1] * img_dims[2]
+
+
         batch_x, batch_y = tf.train.batch([x_data, y_data],
                                           batch_size=[batch_size],
                                           num_threads=4,
@@ -84,7 +90,8 @@ with tf.Session() as sess:
             try:
                 batch_x_eval, batch_y_eval = sess.run([batch_x, batch_y])
 
-                predicted_seg = np.zeros(x_data.size, dtype=np.uint8)
+                # predicted_seg = np.zeros(x_data.size, dtype=np.uint8)
+                predicted_seg = np.zeros(img_size, dtype=np.uint8)
                 acctual_prediction = tf.argmax(pred, axis=1)
                 ap_eval = sess.run([acctual_prediction], feed_dict={x: batch_x_eval, y: batch_y_eval})
 
@@ -98,13 +105,14 @@ with tf.Session() as sess:
                     # create predicted segmentation
                     for k, v in enumerate(ap_eval):
                         for j in range(k * 196, (k + 1) * 196):
-                            predicted_seg[j] = 1 if ap_eval[0][v].all() >= 1 else 0
+                            predicted_seg[j] = 1 if ap_eval[0][v][j] >= 1 else 0
+                            print(predicted_seg[j])
 
-                    predicted_seg = predicted_seg.reshape(predicted_seg.shape[0], 1)
-                    stk_img = stk.GetImageFromArray(predicted_seg, isVector=True)
-                    stk_img = stk.Cast(stk_img, stk.sitkUInt8)
-                    stk_img = stk.Shrink(stk_img, [2048, 2048, 400])
-                    # stk.Show(stk_img)
+                    # predicted_seg = predicted_seg.reshape(predicted_seg.shape[0], 1)
+                    predicted_seg = predicted_seg.reshape(img_dims[2],img_dims[0],img_dims[1])
+                    stk_img = stk.GetImageFromArray(predicted_seg, isVector=False)
+                    # stk_img = stk.Cast(stk_img, stk.sitkUInt8)
+                    # stk_img = stk.Shrink(stk_img, [1, 2, 1])
                     stk.WriteImage(stk_img, 'Predicted_Segmentations\\' + class_f + '_pseg.nii.gz')
                     print('Predicted segmentation has saved.')
 

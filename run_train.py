@@ -4,8 +4,6 @@ import numpy as np
 from helpers import data_prep
 from networks.build_network import build_network
 from networks.weights.liver_kidney_weights import get_weights_and_biases
-import SimpleITK as stk
-import nibabel as nib
 
 env = 'test'
 network = 'simple'
