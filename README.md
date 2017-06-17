@@ -13,7 +13,10 @@ This project was carried out as part of the studies at JCE.
   - tensorflow (or tensorflow-gpu for gpu calculation support)
   - numpy
   - simpleitk
-  - 
+  - pillow
+3. If you use tensorflow-gpu, you will need to install also:
+  - NVIDIA CUDA
+  - NVIDIA cuDNN
 
 ## Usage
 
