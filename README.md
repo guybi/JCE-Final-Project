@@ -10,6 +10,7 @@ The center of the project focuses on investigating the problem of classification
 We have a CT dataset, which our goal if to build a system that claims CT scans so that the system can analyze and obtain useful information from scans for classification purposes.
 We will detail the neural networks in general, detailing the stages of preparation of the information and the stages in building the neuron network, detailing the network we created, the training process and the results we received, as well as details of the difficulties that arose during the development stages.
 
+![CT Segmentation](https://github.com/talshi/JCE-Final-Project/blob/master/images/seg.png)
 
 ## Table of Contents
 
