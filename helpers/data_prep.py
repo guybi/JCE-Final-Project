@@ -350,8 +350,8 @@ def prep_data_liver_kidneys(vol_src_path, seg_src_path, vol_dest_path, seg_dest_
 
                 # create shifted images
                 shifted_input_vol = Im2Blks(input_vol, patch_size, dx, dy)
-                shifted_liver_seg = Im2Blks(liver_seg, patch_size, dx, dy)
-                shifted_kidney_seg = Im2Blks(kidney_seg, patch_size, dx, dy)
+                shifted_liver_seg = Im2Blks(liver_seg, patch_size, dx, dy, False)
+                shifted_kidney_seg = Im2Blks(kidney_seg, patch_size, dx, dy, False)
 
                 # remove irrelevant patches
                 # if all values in patch are less than 10 hounsfeld  -> remove patch
@@ -499,8 +499,8 @@ def prep_data_aorta_spleen(vol_src_path, seg_src_path, vol_dest_path, seg_dest_p
 
                 # create shifted images
                 shifted_input_vol = Im2Blks(input_vol, patch_size, dx, dy)
-                shifted_spleen_seg = Im2Blks(spleen_seg, patch_size, dx, dy)
-                shifted_aorta_seg = Im2Blks(aorta_seg, patch_size, dx, dy)
+                shifted_spleen_seg = Im2Blks(spleen_seg, patch_size, dx, dy, False)
+                shifted_aorta_seg = Im2Blks(aorta_seg, patch_size, dx, dy, False)
 
                 # remove irrelevant patches
                 # if all values in patch are less than 10 hounsfeld  -> remove patch
@@ -696,10 +696,10 @@ def prep_data(vol_src_path, seg_src_path, vol_dest_path, seg_dest_path, seg_rati
 
                 # create shifted images
                 shifted_input_vol = Im2Blks(input_vol, patch_size, dx, dy)
-                shifted_liver_seg = Im2Blks(liver_seg, patch_size, dx, dy)
-                shifted_kidney_seg = Im2Blks(kidney_seg, patch_size, dx, dy)
-                shifted_spleen_seg = Im2Blks(spleen_seg, patch_size, dx, dy)
-                shifted_aorta_seg = Im2Blks(aorta_seg, patch_size, dx, dy)
+                shifted_liver_seg = Im2Blks(liver_seg, patch_size, dx, dy, False)
+                shifted_kidney_seg = Im2Blks(kidney_seg, patch_size, dx, dy, False)
+                shifted_spleen_seg = Im2Blks(spleen_seg, patch_size, dx, dy, False)
+                shifted_aorta_seg = Im2Blks(aorta_seg, patch_size, dx, dy, False)
 
                 # remove irrelevant patches
                 # if all values in patch are less than 10 hounsfeld  -> remove patch
