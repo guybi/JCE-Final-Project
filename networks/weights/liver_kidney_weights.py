@@ -9,7 +9,7 @@ def get_weights_and_biases(network_type):
         weights = {
             # 5x5 conv, 1 input, 32 outputs
             'wc1': tf.Variable(tf.truncated_normal([5, 5, 1, 32], stddev=0.1), name="wc1"),
-            # fully connected, 32 inputs, 512 outputs
+            # fully connected, 1568 inputs, 256 outputs
             'wd1': tf.Variable(tf.truncated_normal([1568, 256], stddev=0.1), name="wd1"),  # 32
             # 256 inputs, 3 outputs (class prediction)
             'out': tf.Variable(tf.truncated_normal([256, n_classes], stddev=0.1), name="wout")
